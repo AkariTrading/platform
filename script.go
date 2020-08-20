@@ -40,16 +40,11 @@ func getScript(w http.ResponseWriter, r *http.Request) {
 	script := &db.Script{}
 
 	query := DB.First(script, id)
-	if query.Error != nil {
-		if query.RecordNotFound() {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := queryError(w, query); err != nil {
 		return
 	}
 
-	writeJson(w, script)
+	writeJSON(w, script)
 }
 
 func getScripts(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +59,7 @@ func getScripts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJson(w, &scripts)
+	writeJSON(w, &scripts)
 }
 
 func createScript(w http.ResponseWriter, r *http.Request) {
@@ -76,15 +71,15 @@ func createScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newScript := &db.Script{Title: script.Title, UserID: getUserIDFromContext(r)}
+	newScript := db.Script{Title: script.Title, UserID: getUserIDFromContext(r)}
 
-	if err := DB.Create(newScript).Error; err != nil {
+	if err := DB.Create(&newScript).Error; err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	writeJson(w, newScript)
+	writeJSON(w, newScript)
 }
 
 // maybe for updating title?
@@ -104,16 +99,9 @@ func updateScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Println(userID, id)
-
 	var script db.Script
 	query := DB.Where("user_id = ?", userID).First(&script, id)
-	if query.Error != nil {
-		if query.RecordNotFound() {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := queryError(w, query); err != nil {
 		return
 	}
 
@@ -123,7 +111,7 @@ func updateScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJson(w, script)
+	writeJSON(w, script)
 }
 
 func deleteScript(w http.ResponseWriter, r *http.Request) {
@@ -141,7 +129,7 @@ func deleteScript(w http.ResponseWriter, r *http.Request) {
 
 	if len(versions) > 0 {
 		w.WriteHeader(http.StatusBadRequest)
-		writeJson(w, map[string]interface{}{"error": "script_running", "msg": "Script is running. To delete, script must be stopped first"})
+		ErrorJSON(w, ScriptRunningError)
 		return
 	}
 

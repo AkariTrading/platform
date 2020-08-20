@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/akaritrading/libs/db"
@@ -14,16 +15,26 @@ func ScriptVersionsRoute(r chi.Router) {
 	r.Get("/", getScriptVersions)
 	r.Post("/", createScriptVersion)
 
-	r.Get("/{versionId}", getScriptVersion)
-
 	r.Post("/{versionId}/run", runScript)
 	r.Post("/{versionId}/stop", stopScript)
 }
 
-func getScriptVersion(w http.ResponseWriter, r *http.Request) {
-}
-
 func getScriptVersions(w http.ResponseWriter, r *http.Request) {
+
+	scriptID, err := getIDFromURL(r)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var versions []db.ScriptVersion
+
+	query := DB.Where("script_id = ?", scriptID).Find(&versions)
+	if err := queryError(w, query); err != nil {
+		return
+	}
+
+	writeJSON(w, versions)
 }
 
 func createScriptVersion(w http.ResponseWriter, r *http.Request) {
@@ -36,19 +47,8 @@ func createScriptVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// versionID, err := getVersionIDFromURL(r)
-	// if err != nil {
-	// 	w.WriteHeader(http.StatusBadRequest)
-	// 	return
-	// }
-
 	query := DB.Where("user_id = ?", userID).First(&db.Script{}, scriptID)
-	if query.Error != nil {
-		if query.RecordNotFound() {
-			w.WriteHeader(http.StatusNotFound)
-			return
-		}
-		w.WriteHeader(http.StatusInternalServerError)
+	if err := queryError(w, query); err != nil {
 		return
 	}
 
@@ -66,18 +66,55 @@ func createScriptVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJson(w, newScript)
-
+	writeJSON(w, newScript)
 }
 
 func runScript(w http.ResponseWriter, r *http.Request) {
+
+	scriptID, err := getFromURL(r, "id")
+	fmt.Println(scriptID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	versionID, err := getFromURL(r, "versionId")
+	fmt.Println(versionID)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	var script db.Script
+	query := DB.First(&script, scriptID)
+	if err := queryError(w, query); err != nil {
+		return
+	}
+
+	if script.IsRunning {
+		w.WriteHeader(http.StatusBadRequest)
+		ErrorJSON(w, ScriptRunningError)
+	}
+
+	var version db.ScriptVersion
+	query = DB.First(&version, versionID)
+	if err := queryError(w, query); err != nil {
+		return
+	}
+
+	if runAtEngine(versionID, false) {
+		return
+	}
+
+	w.WriteHeader(http.StatusInternalServerError)
+
 }
 
 func stopScript(w http.ResponseWriter, r *http.Request) {
 }
 
-func getVersionIDFromURL(r *http.Request) (uint, error) {
-	str := chi.URLParam(r, "versionId")
+func getFromURL(r *http.Request, key string) (uint, error) {
+	str := chi.URLParam(r, key)
 	num, err := util.StrToUint(str)
 	return uint(num), err
 }
