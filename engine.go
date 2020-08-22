@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
@@ -18,46 +19,65 @@ var engineClient = &http.Client{
 	Timeout: time.Second * 30,
 }
 
-func stopAtEngine(ip string, id uint, isTest bool) {
-
-}
-
-func runAtEngine(id uint, isTest bool) bool {
+func runAtEngine(id string, isTest bool) ([]byte, error) {
 
 	query := url.Values{}
 	query.Set("isTest", strconv.FormatBool(isTest))
 
 	ip, err := bestNode(getNodes())
+
+	fmt.Println(ip)
+
 	if err != nil {
-		return false
+		return nil, err
 	}
 
-	fmt.Println(fmt.Sprintf("scriptVersions/%d", id), ip+DebugEnginePort)
+	fmt.Println(fmt.Sprintf("scriptVersions/%s", id), ip+DebugEnginePort)
 
-	url, _ := url.Parse(fmt.Sprintf("http://%s/scriptVersions/%d", ip+DebugEnginePort, id))
+	url, _ := url.Parse(fmt.Sprintf("http://%s/scriptVersions/%s", ip+DebugEnginePort, id))
 
-	req := &http.Request{
+	res, err := engineClient.Do(&http.Request{
 		Method: "POST",
 		URL:    url,
-	}
-
-	res, err := engineClient.Do(req)
-
-	fmt.Println(res)
+	})
 
 	if err != nil {
-		log.Fatal(err)
-		return false
+		return nil, err
 	}
 	defer res.Body.Close()
 
-	fmt.Println(res.StatusCode)
+	body, err := ioutil.ReadAll(res.Body)
 
 	if res.StatusCode == http.StatusOK {
-		return true
+		return nil, nil
 	}
 
-	return false
+	return body, errors.New("engine error")
+}
+
+func stopAtEngine(ip string, id string) ([]byte, error) {
+
+	fmt.Println(fmt.Sprintf("scriptVersions/%s", id), ip+DebugEnginePort)
+
+	url, _ := url.Parse(fmt.Sprintf("http://%s/scriptVersions/%s", ip+DebugEnginePort, id))
+
+	res, err := engineClient.Do(&http.Request{
+		Method: "DELETE",
+		URL:    url,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+
+	if res.StatusCode == http.StatusOK {
+		return nil, nil
+	}
+
+	return body, errors.New("engine error")
 }
 
 func bestNode(stats map[string]engine.MachineStat) (string, error) {

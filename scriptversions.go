@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/util"
@@ -21,39 +22,41 @@ func ScriptVersionsRoute(r chi.Router) {
 
 func getScriptVersions(w http.ResponseWriter, r *http.Request) {
 
-	scriptID, err := getIDFromURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	scriptID := getFromURL(r, "id")
+
+	var script db.Script
+	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
 	var versions []db.ScriptVersion
-
-	query := DB.Where("script_id = ?", scriptID).Find(&versions)
-	if err := queryError(w, query); err != nil {
+	query = DB.Where("script_id = ?", scriptID).Find(&versions)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
-	writeJSON(w, versions)
+	util.WriteJSON(w, versions)
 }
 
 func createScriptVersion(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
+	scriptID := getFromURL(r, "id")
 
-	scriptID, err := getIDFromURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	var script db.Script
+	query := DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
-	query := DB.Where("user_id = ?", userID).First(&db.Script{}, scriptID)
-	if err := queryError(w, query); err != nil {
+	if script.IsRunning {
+		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
 		return
 	}
 
 	var scriptVersion ScriptVersion
-	err = json.NewDecoder(r.Body).Decode(&scriptVersion)
+	err := json.NewDecoder(r.Body).Decode(&scriptVersion)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -66,55 +69,65 @@ func createScriptVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, newScript)
+	util.WriteJSON(w, newScript)
 }
 
 func runScript(w http.ResponseWriter, r *http.Request) {
 
-	scriptID, err := getFromURL(r, "id")
-	fmt.Println(scriptID)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	scriptID := getFromURL(r, "id")
+	versionID := getFromURL(r, "versionId")
+	isTest, _ := strconv.ParseBool(chi.URLParam(r, "isTest"))
 
-	versionID, err := getFromURL(r, "versionId")
-	fmt.Println(versionID)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	fmt.Println(scriptID, versionID)
 
 	var script db.Script
-	query := DB.First(&script, scriptID)
-	if err := queryError(w, query); err != nil {
+	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
 	if script.IsRunning {
-		w.WriteHeader(http.StatusBadRequest)
-		ErrorJSON(w, ScriptRunningError)
-	}
-
-	var version db.ScriptVersion
-	query = DB.First(&version, versionID)
-	if err := queryError(w, query); err != nil {
+		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
 		return
 	}
 
-	if runAtEngine(versionID, false) {
-		return
+	fmt.Println("SENDING TO ENGINE")
+
+	body, err := runAtEngine(versionID, isTest)
+	if err != nil {
+		if body != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(body)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
 	}
-
-	w.WriteHeader(http.StatusInternalServerError)
-
 }
 
 func stopScript(w http.ResponseWriter, r *http.Request) {
-}
 
-func getFromURL(r *http.Request, key string) (uint, error) {
-	str := chi.URLParam(r, key)
-	num, err := util.StrToUint(str)
-	return uint(num), err
+	scriptID := getFromURL(r, "id")
+
+	var script db.Script
+	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
+	if err := util.QueryError(w, query); err != nil {
+		return
+	}
+
+	if !script.IsRunning {
+		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptNotRunningError)
+		return
+	}
+
+	fmt.Println("SENDING TO ENGINE")
+
+	body, err := stopAtEngine(*script.NodeIP, *script.ScriptVersionID)
+	if err != nil {
+		if body != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write(body)
+		} else {
+			w.WriteHeader(http.StatusInternalServerError)
+		}
+	}
 }

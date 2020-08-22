@@ -31,20 +31,15 @@ func ScriptRoute(r chi.Router) {
 
 func getScript(w http.ResponseWriter, r *http.Request) {
 
-	id, err := getIDFromURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
+	scriptID := getFromURL(r, "id")
 	script := &db.Script{}
 
-	query := DB.First(script, id)
-	if err := queryError(w, query); err != nil {
+	query := DB.Where("id = ?", scriptID).First(script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
-	writeJSON(w, script)
+	util.WriteJSON(w, script)
 }
 
 func getScripts(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +54,7 @@ func getScripts(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, &scripts)
+	util.WriteJSON(w, &scripts)
 }
 
 func createScript(w http.ResponseWriter, r *http.Request) {
@@ -73,35 +68,33 @@ func createScript(w http.ResponseWriter, r *http.Request) {
 
 	newScript := db.Script{Title: script.Title, UserID: getUserIDFromContext(r)}
 
+	fmt.Println(newScript)
+
 	if err := DB.Create(&newScript).Error; err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	writeJSON(w, newScript)
+	util.WriteJSON(w, newScript)
 }
 
 // maybe for updating title?
 func updateScript(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
-	id, err := getIDFromURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	scriptID := getFromURL(r, "id")
 
 	var update db.Script
-	err = json.NewDecoder(r.Body).Decode(&update)
+	err := json.NewDecoder(r.Body).Decode(&update)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	var script db.Script
-	query := DB.Where("user_id = ?", userID).First(&script, id)
-	if err := queryError(w, query); err != nil {
+	query := DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
@@ -111,35 +104,32 @@ func updateScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, script)
+	util.WriteJSON(w, script)
 }
 
 func deleteScript(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
+	scriptID := getFromURL(r, "id")
 
-	id, err := getIDFromURL(r)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
+	var script db.Script
+	query := DB.Where("id = ? AND user_id = ?", scriptID, userID).First(&script)
+	if err := util.QueryError(w, query); err != nil {
 		return
 	}
 
-	var versions []db.ScriptVersion
-	DB.Where("script_id = ?", id).Where("is_running = ?", true).Find(&versions)
-
-	if len(versions) > 0 {
-		w.WriteHeader(http.StatusBadRequest)
-		ErrorJSON(w, ScriptRunningError)
+	if script.IsRunning {
+		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
 		return
 	}
 
-	err = DB.Transaction(func(tx *gorm.DB) error {
+	err := DB.Transaction(func(tx *gorm.DB) error {
 
-		if err := tx.Where("user_id = ?", userID).Delete(&db.Script{}, id).Error; err != nil {
+		if err := tx.Where("id = ? AND user_id = ?", scriptID, userID).Delete(&db.Script{}, scriptID).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Where("script_id = ?", id).Delete(&versions).Error; err != nil {
+		if err := tx.Where("script_id = ?", scriptID).Delete(&db.ScriptVersion{}).Error; err != nil {
 			return err
 		}
 
@@ -152,12 +142,6 @@ func deleteScript(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getUserIDFromContext(r *http.Request) uint {
-	return r.Context().Value(USERID).(uint)
-}
-
-func getIDFromURL(r *http.Request) (uint, error) {
-	str := chi.URLParam(r, "id")
-	num, err := util.StrToUint(str)
-	return uint(num), err
+func getUserIDFromContext(r *http.Request) string {
+	return r.Context().Value(USERID).(string)
 }

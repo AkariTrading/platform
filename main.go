@@ -31,6 +31,7 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer)     // replace eventually
 	r.Use(middleware.DefaultLogger) // replace eventually
+	r.Use(middleware.RequestID)     //
 
 	r.Route("/api", apiRoute)
 
