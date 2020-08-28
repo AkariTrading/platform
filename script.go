@@ -125,7 +125,7 @@ func deleteScript(w http.ResponseWriter, r *http.Request) {
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 
-		if err := tx.Where("id = ? AND user_id = ?", scriptID, userID).Delete(&db.Script{}, scriptID).Error; err != nil {
+		if err := tx.Where("id = ? AND user_id = ?", scriptID, userID).Delete(&db.Script{}).Error; err != nil {
 			return err
 		}
 

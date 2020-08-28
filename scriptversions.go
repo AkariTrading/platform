@@ -76,9 +76,7 @@ func runScript(w http.ResponseWriter, r *http.Request) {
 
 	scriptID := getFromURL(r, "id")
 	versionID := getFromURL(r, "versionId")
-	isTest, _ := strconv.ParseBool(chi.URLParam(r, "isTest"))
-
-	fmt.Println(scriptID, versionID)
+	isTest, _ := strconv.ParseBool(r.URL.Query().Get("isTest"))
 
 	var script db.Script
 	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
@@ -93,15 +91,7 @@ func runScript(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("SENDING TO ENGINE")
 
-	body, err := runAtEngine(versionID, isTest)
-	if err != nil {
-		if body != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write(body)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	runAtEngine(w, versionID, isTest)
 }
 
 func stopScript(w http.ResponseWriter, r *http.Request) {
@@ -121,13 +111,5 @@ func stopScript(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Println("SENDING TO ENGINE")
 
-	body, err := stopAtEngine(*script.NodeIP, *script.ScriptVersionID)
-	if err != nil {
-		if body != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write(body)
-		} else {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	}
+	stopAtEngine(w, *script.NodeIP, *script.ScriptVersionID)
 }

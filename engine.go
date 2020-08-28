@@ -19,22 +19,23 @@ var engineClient = &http.Client{
 	Timeout: time.Second * 30,
 }
 
-func runAtEngine(id string, isTest bool) ([]byte, error) {
-
-	query := url.Values{}
-	query.Set("isTest", strconv.FormatBool(isTest))
+func runAtEngine(w http.ResponseWriter, id string, isTest bool) {
 
 	ip, err := bestNode(getNodes())
 
 	fmt.Println(ip)
 
 	if err != nil {
-		return nil, err
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Println(fmt.Sprintf("scriptVersions/%s", id), ip+DebugEnginePort)
 
+	query := url.Values{}
+	query.Set("isTest", strconv.FormatBool(isTest))
 	url, _ := url.Parse(fmt.Sprintf("http://%s/scriptVersions/%s", ip+DebugEnginePort, id))
+	url.RawQuery = query.Encode()
 
 	res, err := engineClient.Do(&http.Request{
 		Method: "POST",
@@ -42,20 +43,22 @@ func runAtEngine(id string, isTest bool) ([]byte, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 
 	if res.StatusCode == http.StatusOK {
-		return nil, nil
+		return
 	}
 
-	return body, errors.New("engine error")
+	w.WriteHeader(res.StatusCode)
+	w.Write(body)
 }
 
-func stopAtEngine(ip string, id string) ([]byte, error) {
+func stopAtEngine(w http.ResponseWriter, ip string, id string) {
 
 	fmt.Println(fmt.Sprintf("scriptVersions/%s", id), ip+DebugEnginePort)
 
@@ -67,17 +70,19 @@ func stopAtEngine(ip string, id string) ([]byte, error) {
 	})
 
 	if err != nil {
-		return nil, err
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 	defer res.Body.Close()
 
 	body, err := ioutil.ReadAll(res.Body)
 
 	if res.StatusCode == http.StatusOK {
-		return nil, nil
+		return
 	}
 
-	return body, errors.New("engine error")
+	w.WriteHeader(res.StatusCode)
+	w.Write(body)
 }
 
 func bestNode(stats map[string]engine.MachineStat) (string, error) {
