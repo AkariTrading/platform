@@ -19,8 +19,8 @@ type ScriptVersion struct {
 	Body string `json:"body"`
 }
 
-// ScriptRoute -
-func ScriptRoute(r chi.Router) {
+// ScriptRoutes -
+func ScriptRoutes(r chi.Router) {
 	r.Get("/", getScripts)
 	r.Post("/", createScript)
 	r.Get("/{id}", getScript)

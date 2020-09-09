@@ -11,8 +11,8 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// ScriptVersionsRoute -
-func ScriptVersionsRoute(r chi.Router) {
+// ScriptVersionsRoutes -
+func ScriptVersionsRoutes(r chi.Router) {
 	r.Get("/", getScriptVersions)
 	r.Post("/", createScriptVersion)
 

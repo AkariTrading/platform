@@ -25,8 +25,8 @@ type EmailModel struct {
 	Email string `json:"email"`
 }
 
-// VerifyEmailModel -
-type VerifyEmailModel struct {
+// CompleteRegistrationModel -
+type CompleteRegistrationModel struct {
 	Token string `json:"token"`
 }
 
@@ -38,7 +38,7 @@ func PublicRoutes(r chi.Router) {
 
 	r.Post("/register", register)
 	r.Post("/resendConfirmationEmail", resendRegistrationEmail)
-	r.Post("/verifyEmail", verifyEmail)
+	r.Get("/completeRegistration", completeRegistration)
 
 	r.Post("/resetPasswordRequest", resetPasswordRequest)
 	r.Post("/resetPassword", resetPassword)
@@ -208,8 +208,10 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("localhost/completeRegistration?token=%v", token)
+	confirmationURL := fmt.Sprintf("http://localhost:6060/api/completeRegistration?token=%v", token)
 	SendEmail(input.Email, confirmationURL)
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
@@ -240,24 +242,24 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("http://localhost/completeRegistration?token=%v", pendingUser.Token)
+	confirmationURL := fmt.Sprintf("http://localhost:6060/completeRegistration?token=%v", pendingUser.Token)
 	SendEmail(input.Email, confirmationURL)
 }
 
-func verifyEmail(w http.ResponseWriter, r *http.Request) {
+func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
 	// get token
-	var input VerifyEmailModel
-	err := json.NewDecoder(r.Body).Decode(&input)
-	if err != nil {
-		fmt.Println(err)
+	keys, ok := r.URL.Query()["token"]
+	if !ok || len(keys[0]) < 1 {
+		fmt.Println("Url Param 'token' is missing")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	token := keys[0]
 
 	// get pendingUser
 	pendingUser := &db.PendingUser{}
-	query := DB.Where("token = ?", input.Token).Take(pendingUser)
+	query := DB.Where("token = ?", token).Take(pendingUser)
 	if errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		fmt.Println("Link is invalid.")
 		w.WriteHeader(http.StatusBadRequest)
@@ -270,7 +272,7 @@ func verifyEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create new user
-	err = DB.Transaction(func(tx *gorm.DB) error {
+	err := DB.Transaction(func(tx *gorm.DB) error {
 		newCred := db.Credential{Email: pendingUser.Email, Password: pendingUser.Password}
 		if err := DB.Create(&newCred).Error; err != nil {
 			return err
@@ -292,6 +294,8 @@ func verifyEmail(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	http.Redirect(w, r, "http://localhost:8080/login?registrationComplete=true", http.StatusSeeOther)
 }
 
 // https://security.stackexchange.com/questions/86913/should-password-reset-tokens-be-hashed-when-stored-in-a-database
