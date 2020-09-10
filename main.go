@@ -7,14 +7,12 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/jinzhu/gorm"
 
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/redis"
-	// "github.com/akaritrading/platform/stat"
 )
 
-var DB *gorm.DB
+var DB *db.DB
 var redisHandle *redis.Handle
 var DebugEnginePort = ":7979" // remove in production
 
@@ -22,7 +20,7 @@ func main() {
 
 	DB = initDB()
 	migrate()
-	defer DB.Close()
+	defer DB.Gorm().Close()
 
 	redisHandle = initRedis()
 	redisHandle.Connect()
@@ -34,6 +32,7 @@ func main() {
 	r.Use(middleware.RequestID)     //
 
 	r.Route("/api", apiRoute)
+	r.Route("/ws", wsRoute)
 
 	server := &http.Server{
 		Addr:    ":6060",
@@ -53,18 +52,18 @@ func apiRoute(r chi.Router) {
 
 func migrate() error {
 	// creates tables and new columns for existing tables
-	return DB.AutoMigrate(
+	return DB.Gorm().AutoMigrate(
 		&db.Script{},
 		&db.ScriptVersion{},
 		&db.User{}).Error
 }
 
-func initDB() *gorm.DB {
+func initDB() *db.DB {
 	db, err := db.Open("localhost", "postgres", "postgres", "password")
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.LogMode(true)
+	db.Gorm().LogMode(true)
 	return db
 }
 

@@ -2,58 +2,62 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 )
 
-// ScriptVersionsRoute -
-func ScriptVersionsRoute(r chi.Router) {
-	r.Get("/", getScriptVersions)
-	r.Post("/", createScriptVersion)
-
-	r.Post("/{versionId}/run", runScript)
-	r.Post("/{versionId}/stop", stopScript)
+var engine = engineclient.Client{
+	RedisHandle: redisHandle,
 }
 
-func getScriptVersions(w http.ResponseWriter, r *http.Request) {
+// ScriptVersionsRoute -
+func ScriptVersionsRoute(r chi.Router) {
+	r.Get("/", getScriptVersionsHandle)
+	r.Post("/", createScriptVersionHandle)
+
+	r.Post("/{versionId}/run", runScriptHandle)
+	r.Post("/{versionId}/stop", stopScriptHandle)
+}
+
+func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
 	scriptID := getFromURL(r, "id")
+	userID := getUserIDFromContext(r)
 
-	var script db.Script
-	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
-	if err := util.QueryError(w, query); err != nil {
+	_, query := DB.GetScript(userID, scriptID)
+	if err := db.QueryError(w, query); err != nil {
 		return
 	}
 
-	var versions []db.ScriptVersion
-	query = DB.Where("script_id = ?", scriptID).Find(&versions)
-	if err := util.QueryError(w, query); err != nil {
+	versions, query := DB.GetScriptVersions(scriptID)
+	if err := db.QueryError(w, query); err != nil {
 		return
 	}
 
 	util.WriteJSON(w, versions)
 }
 
-func createScriptVersion(w http.ResponseWriter, r *http.Request) {
+func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	// userID := getUserIDFromContext(r)
 	scriptID := getFromURL(r, "id")
 
-	var script db.Script
-	query := DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
-	if err := util.QueryError(w, query); err != nil {
-		return
-	}
+	// _, query := GetScriptJob(scriptID)
+	// if !query.RecordNotFound() {
+	// 	util.ErrorJSON(w, engineclient.ErrorScriptRunning.Error())
+	// 	return
+	// }
 
-	if script.IsRunning {
-		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
-		return
-	}
+	// var script db.Script
+	// query = DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
+	// if err := db.QueryError(w, query); err != nil {
+	// 	return
+	// }
 
 	var scriptVersion ScriptVersion
 	err := json.NewDecoder(r.Body).Decode(&scriptVersion)
@@ -62,54 +66,48 @@ func createScriptVersion(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newScript := &db.ScriptVersion{ScriptID: scriptID, Body: scriptVersion.Body}
-
-	if err := DB.Create(newScript).Error; err != nil {
+	newScriptVersion := &db.ScriptVersion{ScriptID: scriptID, Body: scriptVersion.Body}
+	if err := DB.Gorm().Create(newScriptVersion).Error; err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	util.WriteJSON(w, newScript)
+	util.WriteJSON(w, newScriptVersion)
 }
 
-func runScript(w http.ResponseWriter, r *http.Request) {
+func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	scriptID := getFromURL(r, "id")
 	versionID := getFromURL(r, "versionId")
 	isTest, _ := strconv.ParseBool(r.URL.Query().Get("isTest"))
 
-	var script db.Script
-	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
-	if err := util.QueryError(w, query); err != nil {
+	_, query := DB.GetScriptJob(scriptID)
+	if !query.RecordNotFound() {
+		util.ErrorJSON(w, engineclient.ErrorScriptRunning.Error())
 		return
 	}
 
-	if script.IsRunning {
-		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
+	err := engine.StartScript(versionID, isTest)
+	if err != nil {
+		util.ErrorJSON(w, err.Error())
 		return
 	}
-
-	fmt.Println("SENDING TO ENGINE")
-
-	runAtEngine(w, versionID, isTest)
 }
 
-func stopScript(w http.ResponseWriter, r *http.Request) {
+func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	scriptID := getFromURL(r, "id")
+	versionID := getFromURL(r, "versionId")
 
-	var script db.Script
-	query := DB.Where("id = ? AND user_id = ?", scriptID, getUserIDFromContext(r)).First(&script)
-	if err := util.QueryError(w, query); err != nil {
+	job, query := DB.GetScriptJob(scriptID)
+	if query.RecordNotFound() {
+		util.ErrorJSON(w, engineclient.ErrorScriptNotRunning.Error())
 		return
 	}
 
-	if !script.IsRunning {
-		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptNotRunningError)
+	err := engine.StopScript(*job.NodeIP, versionID)
+	if err != nil {
+		util.ErrorJSON(w, err.Error())
 		return
 	}
-
-	fmt.Println("SENDING TO ENGINE")
-
-	stopAtEngine(w, *script.NodeIP, *script.ScriptVersionID)
 }

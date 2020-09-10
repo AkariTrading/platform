@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
@@ -21,34 +22,32 @@ type ScriptVersion struct {
 
 // ScriptRoute -
 func ScriptRoute(r chi.Router) {
-	r.Get("/", getScripts)
-	r.Post("/", createScript)
-	r.Get("/{id}", getScript)
-	r.Put("/{id}", updateScript)
-	r.Delete("/{id}", deleteScript)
+	r.Get("/", getScriptsHandle)
+	r.Post("/", createScriptHandle)
+	r.Get("/{id}", getScriptHandle)
+	r.Put("/{id}", updateScriptHandle)
+	r.Delete("/{id}", deleteScriptHandle)
 
 }
 
-func getScript(w http.ResponseWriter, r *http.Request) {
+func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	scriptID := getFromURL(r, "id")
-	script := &db.Script{}
+	userID := getUserIDFromContext(r)
 
-	query := DB.Where("id = ?", scriptID).First(script)
-	if err := util.QueryError(w, query); err != nil {
+	script, query := DB.GetScript(userID, scriptID)
+	if err := db.QueryError(w, query); err != nil {
 		return
 	}
 
 	util.WriteJSON(w, script)
 }
 
-func getScripts(w http.ResponseWriter, r *http.Request) {
+func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
 
-	var scripts []db.Script
-
-	query := DB.Where("user_id = ?", userID).Find(&scripts)
+	scripts, query := DB.GetScripts(userID)
 	if query.Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -57,7 +56,9 @@ func getScripts(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, &scripts)
 }
 
-func createScript(w http.ResponseWriter, r *http.Request) {
+func createScriptHandle(w http.ResponseWriter, r *http.Request) {
+
+	userID := getUserIDFromContext(r)
 
 	var script Script
 	err := json.NewDecoder(r.Body).Decode(&script)
@@ -66,11 +67,11 @@ func createScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newScript := db.Script{Title: script.Title, UserID: getUserIDFromContext(r)}
+	newScript := db.Script{Title: script.Title, UserID: userID}
 
 	fmt.Println(newScript)
 
-	if err := DB.Create(&newScript).Error; err != nil {
+	if err := DB.Gorm().Create(&newScript).Error; err != nil {
 		fmt.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -80,7 +81,7 @@ func createScript(w http.ResponseWriter, r *http.Request) {
 }
 
 // maybe for updating title?
-func updateScript(w http.ResponseWriter, r *http.Request) {
+func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
 	scriptID := getFromURL(r, "id")
@@ -92,14 +93,13 @@ func updateScript(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var script db.Script
-	query := DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
-	if err := util.QueryError(w, query); err != nil {
+	script, query := DB.GetScript(userID, scriptID)
+	if err := db.QueryError(w, query); err != nil {
 		return
 	}
 
 	script.Title = update.Title
-	if DB.Save(&script).Error != nil {
+	if DB.Gorm().Save(&script).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -107,29 +107,34 @@ func updateScript(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, script)
 }
 
-func deleteScript(w http.ResponseWriter, r *http.Request) {
+func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
 	scriptID := getFromURL(r, "id")
 
-	var script db.Script
-	query := DB.Where("id = ? AND user_id = ?", scriptID, userID).First(&script)
-	if err := util.QueryError(w, query); err != nil {
+	_, query := DB.GetScript(userID, scriptID)
+	if err := db.QueryError(w, query); err != nil {
 		return
 	}
 
-	if script.IsRunning {
-		util.ErrorJSON(w, http.StatusBadRequest, util.ScriptRunningError)
+	var job db.ScriptJob
+	query = DB.Gorm().Where("script_id = ?", scriptID).First(&job)
+	if !query.RecordNotFound() {
+		util.ErrorJSON(w, engineclient.ErrorScriptRunning.Error())
 		return
 	}
 
-	err := DB.Transaction(func(tx *gorm.DB) error {
+	err := DB.Gorm().Transaction(func(tx *gorm.DB) error {
 
 		if err := tx.Where("id = ? AND user_id = ?", scriptID, userID).Delete(&db.Script{}).Error; err != nil {
 			return err
 		}
 
 		if err := tx.Where("script_id = ?", scriptID).Delete(&db.ScriptVersion{}).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Where("script_id = ?", scriptID).Delete(&db.ScriptJob{}).Error; err != nil {
 			return err
 		}
 
