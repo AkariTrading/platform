@@ -14,6 +14,7 @@ import (
 
 var DB *db.DB
 var redisHandle *redis.Handle
+var port = ":6060"
 var DebugEnginePort = ":7979" // remove in production
 
 func main() {
@@ -35,26 +36,34 @@ func main() {
 	r.Route("/ws", wsRoute)
 
 	server := &http.Server{
-		Addr:    ":6060",
+		Addr:    port,
 		Handler: r,
 	}
+
+	println("Now serving on " + port)
 
 	log.Fatal(server.ListenAndServe())
 }
 
 func apiRoute(r chi.Router) {
 
-	r.Use(authentication) // authentication middleware
-	r.Use(jsonResponse)   // adds json content header
-	r.Route("/scripts", ScriptRoute)
-	r.Route("/scripts/{id}/versions", ScriptVersionsRoute)
+	r.Use(jsonResponse) // adds json content header
+
+	r.Route("/", PublicRoutes)
+	r.Route("/users", UsersRoutes)
+
+	r.Group(func(r chi.Router) {
+		r.Use(authentication) // authentication middleware
+		r.Route("/scripts", ScriptRoute)
+		r.Route("/scripts/{id}/versions", ScriptVersionsRoute)
+	})
 }
 
 func migrate() error {
-	// creates tables and new columns for existing tables
 	return DB.Gorm().AutoMigrate(
 		&db.Script{},
 		&db.ScriptVersion{},
+		&db.PendingUser{},
 		&db.User{}).Error
 }
 

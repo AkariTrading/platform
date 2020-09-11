@@ -44,20 +44,7 @@ func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
 func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
-	// userID := getUserIDFromContext(r)
 	scriptID := getFromURL(r, "id")
-
-	// _, query := GetScriptJob(scriptID)
-	// if !query.RecordNotFound() {
-	// 	util.ErrorJSON(w, engineclient.ErrorScriptRunning.Error())
-	// 	return
-	// }
-
-	// var script db.Script
-	// query = DB.Where("user_id = ? AND id  = ?", userID, scriptID).First(&script)
-	// if err := db.QueryError(w, query); err != nil {
-	// 	return
-	// }
 
 	var scriptVersion ScriptVersion
 	err := json.NewDecoder(r.Body).Decode(&scriptVersion)
