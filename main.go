@@ -8,23 +8,24 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
+	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/redis"
+	"github.com/akaritrading/libs/util"
 )
 
 var DB *db.DB
 var redisHandle *redis.Handle
 var port = ":6060"
-var DebugEnginePort = ":7979" // remove in production
 
 func main() {
 
 	DB = initDB()
 	migrate()
-	defer DB.Gorm().Close()
 
 	redisHandle = initRedis()
 	redisHandle.Connect()
+	engineClient = engineclient.Client{RedisHandle: redisHandle}
 	defer redisHandle.Close()
 
 	r := chi.NewRouter()
@@ -63,24 +64,25 @@ func migrate() error {
 	return DB.Gorm().AutoMigrate(
 		&db.Script{},
 		&db.ScriptVersion{},
+		&db.ScriptJob{},
 		&db.PendingUser{},
-		&db.User{}).Error
+		&db.Credential{},
+		&db.User{})
 }
 
 func initDB() *db.DB {
-	db, err := db.Open("localhost", "postgres", "postgres", "password")
+	db, err := db.Open(util.PostgresHost(), util.PostgresUser(), util.PostgresDBName(), util.PostgresPassword())
 	if err != nil {
 		log.Fatal(err)
 	}
-	db.Gorm().LogMode(true)
 	return db
 }
 
 func initRedis() *redis.Handle {
 	return &redis.Handle{
-		MaxActive:       100,
-		MaxIdle:         30,
-		IdleTimeout:     time.Minute * 5,
-		MaxConnLifetime: time.Minute * 5,
+		Host:        util.RedisHost(),
+		MaxActive:   util.RedisMaxActive(),
+		MaxIdle:     util.RedisMaxIdle(),
+		IdleTimeout: time.Minute * 5,
 	}
 }

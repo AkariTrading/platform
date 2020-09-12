@@ -5,11 +5,14 @@ import (
 	"net/http"
 
 	"github.com/akaritrading/backtest/pkg/backtestclient"
+	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 )
 
-var backtestHost = "localhost:9090"
+var client = backtestclient.BacktestClient{
+	Host: util.BacktestHost(),
+}
 
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
@@ -35,10 +38,6 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err)
 		return
-	}
-
-	client := backtestclient.BacktestClient{
-		Host: backtestHost,
 	}
 
 	backtest, err := client.Connect(testrun)

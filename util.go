@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-const (
-	sendGridKey = "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"
-)
+var sendGridKey = util.SendGridKey()
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)

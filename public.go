@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -10,8 +11,8 @@ import (
 	"github.com/akaritrading/libs/redis"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
-	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 // CredentialModel -
@@ -167,14 +168,14 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 	// check existing user
 	_, query := DB.GetUser(input.Email)
-	if !query.RecordNotFound() {
+	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		fmt.Println("Email already exists.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	_, query = DB.GetPendingUser(input.Email)
-	if !query.RecordNotFound() {
+	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		fmt.Println("Email already exists as a pending user. Please resend confirmation email.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -236,7 +237,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("http://localhost:6060/completeRegistration?token=%v", pendingUser.Token)
+	confirmationURL := fmt.Sprintf("http://%s/completeRegistration?token=%v", util.PlatformHost(), pendingUser.Token)
 	SendEmail(input.Email, confirmationURL)
 }
 
@@ -264,7 +265,9 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create new user
+
 	err := DB.Gorm().Transaction(func(tx *gorm.DB) error {
+
 		newCred := db.Credential{Email: pendingUser.Email, Password: pendingUser.Password}
 		if err := DB.Gorm().Create(&newCred).Error; err != nil {
 			return err
