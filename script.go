@@ -118,13 +118,13 @@ func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScriptJob(scriptID)
+	_, query = DB.GetScriptJob(scriptID, true)
 	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
 	}
 
-	err := DB.Gorm().Select("ScriptVersions", "ScriptJob").Delete(&script).Error
+	err := DB.Gorm().Select("ScriptVersions", "ScriptJob", "Trades", "ScriptLogs").Delete(&script).Error
 
 	// err := DB.Gorm().Transaction(func(tx *gorm.DB) error {
 

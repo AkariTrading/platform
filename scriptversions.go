@@ -81,7 +81,7 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScriptJob(scriptID)
+	_, query = DB.GetScriptJob(scriptID, true)
 	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
@@ -116,7 +116,7 @@ func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	job, query := DB.GetScriptJob(scriptID)
+	job, query := DB.GetScriptJob(scriptID, true)
 	if errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		util.ErrorJSON(w, util.ErrorScriptNotRunning)
 		return

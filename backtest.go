@@ -10,7 +10,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-var client = backtestclient.BacktestClient{
+var backtestClient = backtestclient.BacktestClient{
 	Host: util.BacktestHost(),
 }
 
@@ -40,7 +40,9 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	backtest, err := client.Connect(testrun)
+	// TODO: error check testrun
+
+	backtest, err := backtestClient.Connect(testrun)
 	if err != nil {
 		return
 	}
