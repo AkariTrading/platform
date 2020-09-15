@@ -6,7 +6,6 @@ import (
 
 	"github.com/akaritrading/backtest/pkg/backtestclient"
 	"github.com/akaritrading/libs/util"
-	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
 )
 
@@ -15,13 +14,9 @@ var backtestClient = backtestclient.BacktestClient{
 }
 
 var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func wsRoute(r chi.Router) {
-	r.Use(authentication)
-	r.Get("/backtest", backtest)
+	ReadBufferSize:    1024,
+	WriteBufferSize:   1024,
+	EnableCompression: true,
 }
 
 func backtest(w http.ResponseWriter, r *http.Request) {

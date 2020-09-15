@@ -6,7 +6,6 @@ import (
 
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
-	uuid "github.com/satori/go.uuid"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
@@ -15,11 +14,6 @@ var sendGridKey = util.SendGridKey()
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
-}
-
-// CreateUUID -
-func CreateUUID() string {
-	return uuid.NewV4().String()
 }
 
 // SendEmail -

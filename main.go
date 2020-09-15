@@ -56,8 +56,15 @@ func apiRoute(r chi.Router) {
 	r.Group(func(r chi.Router) {
 		r.Use(authentication) // authentication middleware
 		r.Route("/scripts", ScriptRoute)
-		r.Route("/scripts/{id}/versions", ScriptVersionsRoute)
+		r.Route("/history", HistoryRoute)
+		r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
+		r.Route("/scripts/{scriptID}/jobs", JobsRoute)
 	})
+}
+
+func wsRoute(r chi.Router) {
+	r.Use(authentication)
+	r.Get("/backtest", backtest)
 }
 
 func migrate() error {
@@ -65,6 +72,8 @@ func migrate() error {
 		&db.Script{},
 		&db.ScriptVersion{},
 		&db.ScriptJob{},
+		&db.ScriptTrade{},
+		&db.ScriptLog{},
 		&db.PendingUser{},
 		&db.Credential{},
 		&db.User{})

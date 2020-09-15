@@ -76,7 +76,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// store session cookie
-	sessionToken := CreateUUID()
+	sessionToken := db.NewUUID()
 	_, err = redisHandle.Do(redis.SetKeyExpire, sessionToken, sessionExpiryInSeconds, input.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -192,7 +192,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create pending user
-	token := CreateUUID()
+	token := db.NewUUID()
 	newPendingUser := db.PendingUser{
 		Email:          input.Email,
 		Password:       string(hashPassword),
@@ -230,7 +230,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// replace previous token
-	pendingUser.Token = CreateUUID()
+	pendingUser.Token = db.NewUUID()
 	if DB.Gorm().Save(&pendingUser).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -313,7 +313,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// replace previous token
-	cred.ResetToken = CreateUUID()
+	cred.ResetToken = db.NewUUID()
 	if DB.Gorm().Save(&cred).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

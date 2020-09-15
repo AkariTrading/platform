@@ -21,12 +21,11 @@ func ScriptVersionsRoute(r chi.Router) {
 	r.Post("/", createScriptVersionHandle)
 
 	r.Post("/{versionId}/run", runScriptHandle)
-	r.Post("/{versionId}/stop", stopScriptHandle)
 }
 
 func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
-	scriptID := getFromURL(r, "id")
+	scriptID := getFromURL(r, "scriptID")
 	userID := getUserIDFromContext(r)
 
 	_, query := DB.GetScript(userID, scriptID)
@@ -41,7 +40,7 @@ func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
 func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
-	scriptID := getFromURL(r, "id")
+	scriptID := getFromURL(r, "scriptID")
 	userID := getUserIDFromContext(r)
 
 	_, query := DB.GetScript(userID, scriptID)
@@ -68,7 +67,7 @@ func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	userID := getUserIDFromContext(r)
-	scriptID := getFromURL(r, "id")
+	scriptID := getFromURL(r, "scriptID")
 	versionID := getFromURL(r, "versionId")
 
 	_, query := DB.GetScript(userID, scriptID)
@@ -81,48 +80,19 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScriptJob(scriptID, true)
+	_, query = DB.GetRunningScriptJobByVersion(scriptID, versionID)
 	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
 	}
 
-	job, err := jobRequest(r.Body, scriptID, versionID, userID)
+	jobrequest, err := jobRequest(r.Body, scriptID, versionID, userID)
 	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = engineClient.StartScript(job)
-	if err != nil {
-		util.ErrorJSON(w, err)
-		return
-	}
-}
-
-func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
-
-	userID := getUserIDFromContext(r)
-	scriptID := getFromURL(r, "id")
-	versionID := getFromURL(r, "versionId")
-
-	_, query := DB.GetScript(userID, scriptID)
-	if err := db.QueryError(w, query); err != nil {
-		return
-	}
-
-	_, query = DB.GetScriptVersion(versionID)
-	if err := db.QueryError(w, query); err != nil {
-		return
-	}
-
-	job, query := DB.GetScriptJob(scriptID, true)
-	if errors.Is(query.Error, gorm.ErrRecordNotFound) {
-		util.ErrorJSON(w, util.ErrorScriptNotRunning)
-		return
-	}
-
-	err := engineClient.StopScript(job.NodeIP, versionID)
+	err = engineClient.StartScript(jobrequest)
 	if err != nil {
 		util.ErrorJSON(w, err)
 		return
@@ -145,7 +115,8 @@ func jobRequest(r io.Reader, scriptID string, versionID string, userID string) (
 
 	job.ScriptID = scriptID
 	job.VersionID = versionID
-	job.UserID = userID
+	job.State = make(map[string]interface{})
+	job.ID = db.NewUUID()
 
 	return &job, nil
 }

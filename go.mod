@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/akaritrading/backtest/pkg v0.0.0
+	github.com/akaritrading/prices/pkg v0.0.0
 	github.com/akaritrading/engine/pkg v0.0.0
 	github.com/akaritrading/libs v0.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
@@ -19,6 +20,8 @@ require (
 replace github.com/akaritrading/libs v0.0.0 => ../libs
 
 replace github.com/akaritrading/backtest/pkg v0.0.0 => ../backtest/pkg
+
+replace github.com/akaritrading/prices/pkg v0.0.0 => ../prices/pkg
 
 replace github.com/akaritrading/engine/pkg v0.0.0 => ../engine/pkg
 
