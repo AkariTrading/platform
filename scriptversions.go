@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 
@@ -10,10 +9,9 @@ import (
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 	"gorm.io/gorm"
 )
-
-var engineClient engineclient.Client
 
 // ScriptVersionsRoute -
 func ScriptVersionsRoute(r chi.Router) {
@@ -30,6 +28,7 @@ func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -45,18 +44,21 @@ func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
 	var scriptVersion ScriptVersion
 	err := json.NewDecoder(r.Body).Decode(&scriptVersion)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	newScriptVersion := &db.ScriptVersion{ScriptID: scriptID, Body: scriptVersion.Body}
 	if err := DB.Gorm().Create(newScriptVersion).Error; err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -72,29 +74,35 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
 	_, query = DB.GetScriptVersion(versionID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
 	_, query = DB.GetRunningScriptJobByVersion(scriptID, versionID)
-	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
+	if query.Error != gorm.ErrRecordNotFound {
+		logger.Error(errors.WithStack(util.ErrorScriptRunning))
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
 	}
 
 	jobrequest, err := jobRequest(r.Body, scriptID, versionID, userID)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	err = engineClient.StartScript(jobrequest)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		util.ErrorJSON(w, err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 }

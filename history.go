@@ -8,6 +8,7 @@ import (
 	"github.com/akaritrading/prices/pkg/pricesclient"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/pkg/errors"
 )
 
 var binance = &pricesclient.Client{
@@ -44,6 +45,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	if exchange == "binance" {
 		hist, err := binance.GetData(symbol, 0, maxSize)
 		if err != nil {
+			logger.Error(errors.WithStack(err))
 			util.ErrorJSON(w, err)
 			return
 		}
@@ -52,4 +54,6 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	util.ErrorJSON(w, util.ErrorExchangeNotFound)
+	logger.Error(errors.WithStack(util.ErrorExchangeNotFound))
+
 }

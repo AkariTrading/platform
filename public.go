@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/akaritrading/libs/redis"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -57,6 +57,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	var input CredentialModel
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -64,14 +65,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	// get existing creds
 	existingCred, query := DB.GetCredential(input.Email)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
 	// compare inbound and stored passwords
 	err = bcrypt.CompareHashAndPassword([]byte(existingCred.Password), []byte(input.Password))
 	if err != nil {
-		fmt.Println(err)
 		w.WriteHeader(http.StatusUnauthorized)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -80,6 +82,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	_, err = redisHandle.Do(redis.SetKeyExpire, sessionToken, sessionExpiryInSeconds, input.Email)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -97,6 +100,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == http.ErrNoCookie {
 			w.WriteHeader(http.StatusBadRequest)
+			logger.Error(errors.WithStack(err))
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
@@ -108,6 +112,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	response, err := redisHandle.Do(redis.DeleteKey, sessionToken)
 	if err != nil {
 		fmt.Printf("Error: expiring session_token %v.", sessionToken)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 	} else if response == 0 {
 		fmt.Printf("session_token %v already nil.", sessionToken)
@@ -133,6 +138,7 @@ func verifySession(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		if err == http.ErrNoCookie {
 			w.WriteHeader(http.StatusBadRequest)
+			logger.Error(errors.WithStack(err))
 			return
 		}
 		w.WriteHeader(http.StatusBadRequest)
@@ -143,6 +149,8 @@ func verifySession(w http.ResponseWriter, r *http.Request) {
 	response, err := redisHandle.Do(redis.GetKey, sessionToken)
 	if err != nil {
 		// error fetching from cache
+		logger.Error(errors.WithStack(err))
+
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -162,21 +170,22 @@ func register(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	// check existing user
 	_, query := DB.GetUser(input.Email)
-	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
-		fmt.Println("Email already exists.")
+	if query.Error != gorm.ErrRecordNotFound {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	_, query = DB.GetPendingUser(input.Email)
-	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
-		fmt.Println("Email already exists as a pending user. Please resend confirmation email.")
+	if query.Error != gorm.ErrRecordNotFound {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -186,7 +195,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	// salt and has password
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), 8)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -200,7 +209,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 		Token:          token,
 	}
 	if err := DB.Gorm().Create(&newPendingUser).Error; err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -218,7 +227,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	var input EmailModel
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -226,6 +235,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	// get existing pendingUser
 	pendingUser, query := DB.GetPendingUser(input.Email)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -233,6 +243,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	pendingUser.Token = db.NewUUID()
 	if DB.Gorm().Save(&pendingUser).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -255,6 +266,7 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	// get pendingUser
 	pendingUser, query := DB.GetPendingUserWithToken(token)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -270,15 +282,18 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
 		newCred := db.Credential{Email: pendingUser.Email, Password: pendingUser.Password}
 		if err := DB.Gorm().Create(&newCred).Error; err != nil {
+			logger.Error(errors.WithStack(err))
 			return err
 		}
 
 		newUser := db.User{Email: pendingUser.Email}
 		if err := DB.Gorm().Create(&newUser).Error; err != nil {
+			logger.Error(errors.WithStack(err))
 			return err
 		}
 
 		if err := DB.Gorm().Where("email = ?", pendingUser.Email).Delete(&db.PendingUser{}).Error; err != nil {
+			logger.Error(errors.WithStack(err))
 			return err
 		}
 
@@ -301,7 +316,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	var input EmailModel
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -309,6 +324,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	// get existing credential
 	cred, query := DB.GetCredential(input.Email)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -316,6 +332,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	cred.ResetToken = db.NewUUID()
 	if DB.Gorm().Save(&cred).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 

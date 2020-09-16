@@ -1,15 +1,16 @@
 package main
 
 import (
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
+	"github.com/pkg/errors"
 
 	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/log"
 	"github.com/akaritrading/libs/redis"
 	"github.com/akaritrading/libs/util"
 )
@@ -17,6 +18,9 @@ import (
 var DB *db.DB
 var redisHandle *redis.Handle
 var port = ":6060"
+var engineClient engineclient.Client
+
+var logger = log.New("platform")
 
 func main() {
 
@@ -25,7 +29,7 @@ func main() {
 
 	redisHandle = initRedis()
 	redisHandle.Connect()
-	engineClient = engineclient.Client{RedisHandle: redisHandle}
+	engineClient = engineclient.Client{RedisHandle: redisHandle, Logger: logger}
 	defer redisHandle.Close()
 
 	r := chi.NewRouter()
@@ -43,7 +47,7 @@ func main() {
 
 	println("Now serving on " + port)
 
-	log.Fatal(server.ListenAndServe())
+	server.ListenAndServe()
 }
 
 func apiRoute(r chi.Router) {
@@ -82,7 +86,7 @@ func migrate() error {
 func initDB() *db.DB {
 	db, err := db.Open(util.PostgresHost(), util.PostgresUser(), util.PostgresDBName(), util.PostgresPassword())
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatal(errors.Wrap(err, "failed initializing db"))
 	}
 	return db
 }

@@ -2,9 +2,10 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
+
+	"github.com/pkg/errors"
 
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/util"
@@ -36,6 +37,7 @@ func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	script, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -48,6 +50,7 @@ func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
 	scripts, query := DB.GetScripts(userID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -61,6 +64,7 @@ func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 	var script ScriptRequest
 	err := json.NewDecoder(r.Body).Decode(&script)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -70,7 +74,7 @@ func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(newScript)
 
 	if err := DB.Gorm().Create(&newScript).Error; err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -87,12 +91,14 @@ func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 	var update db.Script
 	err := json.NewDecoder(r.Body).Decode(&update)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	script, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -112,11 +118,13 @@ func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
 	_, query = DB.GetScriptJob(scriptID)
-	if !errors.Is(query.Error, gorm.ErrRecordNotFound) {
+	if query.Error != gorm.ErrRecordNotFound {
+		logger.Error(errors.WithStack(query.Error))
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
 	}
@@ -149,6 +157,7 @@ func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 }

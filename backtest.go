@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/akaritrading/backtest/pkg/backtestclient"
 	"github.com/akaritrading/libs/util"
 	"github.com/gorilla/websocket"
+	"github.com/pkg/errors"
 )
 
 var backtestClient = backtestclient.BacktestClient{
@@ -23,7 +23,7 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(errors.New("failed upgrading to websocket connection"))
 		return
 	}
 	defer conn.Close()
@@ -31,7 +31,7 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 	var testrun backtestclient.TestRun
 	conn.ReadJSON(&testrun)
 	if err != nil {
-		log.Fatal(err)
+		logger.Error(errors.WithStack(err))
 		return
 	}
 
@@ -39,6 +39,7 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 
 	backtest, err := backtestClient.Connect(testrun)
 	if err != nil {
+		logger.Error(errors.WithStack(err))
 		return
 	}
 	defer backtest.Close()
