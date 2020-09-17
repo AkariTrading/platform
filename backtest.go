@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/akaritrading/backtest/pkg/backtestclient"
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
@@ -20,6 +21,8 @@ var upgrader = websocket.Upgrader{
 }
 
 func backtest(w http.ResponseWriter, r *http.Request) {
+
+	logger := middleware.GetLogger(r)
 
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {

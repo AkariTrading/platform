@@ -4,18 +4,15 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/redis"
 )
-
-type key int
-
-const USERID key = iota
 
 func authentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
 		// DEBUG
-		ctx := context.WithValue(r.Context(), USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
+		ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
 		next.ServeHTTP(w, r.WithContext(ctx))
 		return
 		// DEBUG
@@ -44,7 +41,7 @@ func authentication(next http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), USERID, response)))
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), middleware.USERID, response)))
 	})
 }
 

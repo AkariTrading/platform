@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 	"gorm.io/gorm"
@@ -32,8 +33,10 @@ func ScriptRoute(r chi.Router) {
 
 func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+
 	scriptID := getFromURL(r, "scriptID")
-	userID := getUserIDFromContext(r)
+	userID := middleware.GetUserID(r)
 
 	script, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
@@ -46,7 +49,9 @@ func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+
+	userID := middleware.GetUserID(r)
 
 	scripts, query := DB.GetScripts(userID)
 	if err := db.QueryError(w, query); err != nil {
@@ -59,7 +64,9 @@ func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
 func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+
+	userID := middleware.GetUserID(r)
 
 	var script ScriptRequest
 	err := json.NewDecoder(r.Body).Decode(&script)
@@ -85,7 +92,10 @@ func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 // maybe for updating title?
 func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+
+	userID := middleware.GetUserID(r)
+
 	scriptID := getFromURL(r, "scriptID")
 
 	var update db.Script
@@ -113,7 +123,8 @@ func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
 	scriptID := getFromURL(r, "scriptID")
 
 	_, query := DB.GetScript(userID, scriptID)
@@ -160,8 +171,4 @@ func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 		logger.Error(errors.WithStack(err))
 		return
 	}
-}
-
-func getUserIDFromContext(r *http.Request) string {
-	return r.Context().Value(USERID).(string)
 }

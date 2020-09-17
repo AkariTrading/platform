@@ -3,7 +3,9 @@ package main
 import (
 	"net/http"
 
+	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -15,7 +17,10 @@ func JobsRoute(r chi.Router) {
 
 func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+	engineClient := engineclient.GetClient(logger)
+
 	scriptID := getFromURL(r, "scriptID")
 	jobID := getFromURL(r, "jobID")
 

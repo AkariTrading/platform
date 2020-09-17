@@ -4,10 +4,11 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/akaritrading/prices/pkg/pricesclient"
 	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/pkg/errors"
 )
 
@@ -17,11 +18,13 @@ var binance = &pricesclient.Client{
 }
 
 func HistoryRoute(r chi.Router) {
-	r.Use(middleware.Compress(5))
+	r.Use(chimiddleware.Compress(5))
 	r.Get("/{exchange}/{symbol}", getHistoryHandle)
 }
 
 func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
+
+	logger := middleware.GetLogger(r)
 
 	exchange := chi.URLParam(r, "exchange")
 	symbol := chi.URLParam(r, "symbol")

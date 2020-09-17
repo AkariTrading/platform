@@ -7,6 +7,7 @@ import (
 
 	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
@@ -23,8 +24,10 @@ func ScriptVersionsRoute(r chi.Router) {
 
 func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+
 	scriptID := getFromURL(r, "scriptID")
-	userID := getUserIDFromContext(r)
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
@@ -39,8 +42,10 @@ func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
 func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+
 	scriptID := getFromURL(r, "scriptID")
-	userID := getUserIDFromContext(r)
 
 	_, query := DB.GetScript(userID, scriptID)
 	if err := db.QueryError(w, query); err != nil {
@@ -68,7 +73,10 @@ func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
 func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 
-	userID := getUserIDFromContext(r)
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+	engineClient := engineclient.GetClient(logger)
+
 	scriptID := getFromURL(r, "scriptID")
 	versionID := getFromURL(r, "versionId")
 

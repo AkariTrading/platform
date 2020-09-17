@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/redis"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
@@ -53,6 +54,8 @@ const (
 
 func login(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+
 	// get credentials
 	var input CredentialModel
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -89,11 +92,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:    sessionTokenKey,
 		Value:   sessionToken,
-		Expires: time.Now().Add(120 * time.Second),
+		Expires: time.Now().Add(time.Hour),
 	})
+
+	w.Header().Set("session_token", sessionToken)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
+
+	logger := middleware.GetLogger(r)
 
 	// get session from cookie
 	c, err := r.Cookie(sessionTokenKey)
@@ -133,6 +140,8 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 func verifySession(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+
 	// get session from cookie
 	c, err := r.Cookie(sessionTokenKey)
 	if err != nil {
@@ -164,6 +173,8 @@ func verifySession(w http.ResponseWriter, r *http.Request) {
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
+
+	logger := middleware.GetLogger(r)
 
 	// get credentials
 	var input CredentialModel
@@ -223,6 +234,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 
 func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 
+	logger := middleware.GetLogger(r)
+
 	// get email
 	var input EmailModel
 	err := json.NewDecoder(r.Body).Decode(&input)
@@ -254,7 +267,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 
 func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
-	// get token
+	logger := middleware.GetLogger(r)
 
 	token := r.URL.Query().Get("token")
 
@@ -311,6 +324,8 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
 // https://security.stackexchange.com/questions/86913/should-password-reset-tokens-be-hashed-when-stored-in-a-database
 func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
+
+	logger := middleware.GetLogger(r)
 
 	// get email
 	var input EmailModel
