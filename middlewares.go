@@ -18,25 +18,28 @@ func authentication(next http.Handler) http.Handler {
 		// DEBUG
 
 		// We can obtain the session token from the requests cookies, which come with every request
-		c, err := r.Cookie("session_token")
-		if err != nil {
-			if err == http.ErrNoCookie {
-				w.WriteHeader(http.StatusUnauthorized)
-				return
-			}
-			w.WriteHeader(http.StatusBadRequest)
+
+		var sessionToken string
+
+		if token := r.Header.Get(sessionTokenHeader); token != "" {
+			sessionToken = token
+		} else if c, err := r.Cookie("session_token"); err == nil {
+			sessionToken = c.Value
+		}
+
+		if sessionToken == "" {
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		sessionToken := c.Value
 
 		// We then get the name of the user from our cache, where we set the session token
-		response, err := redisHandle.Do(redis.GetKey, sessionToken)
+		response, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
 		if err != nil {
 			// error fetching from cache
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
-		if response == nil {
+		if response == "" {
 			// not present in cache
 			w.WriteHeader(http.StatusUnauthorized)
 			return
