@@ -11,6 +11,7 @@ import (
 )
 
 var sendGridKey = util.SendGridKey()
+var sendGridClient = sendgrid.NewSendClient(sendGridKey)
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
@@ -24,8 +25,7 @@ func SendEmail(targetEmail string, url string) {
 	plainTextContent := "Welcome to Akari Trading. :happypepe:"
 	htmlContent := fmt.Sprintf("<a href='%v'> Verify your email. </a>", url)
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	client := sendgrid.NewSendClient(sendGridKey)
-	response, err := client.Send(message)
+	response, err := sendGridClient.Send(message)
 	if err != nil {
 		fmt.Println(err)
 	} else {

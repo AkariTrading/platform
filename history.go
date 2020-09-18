@@ -56,7 +56,6 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	util.ErrorJSON(w, util.ErrorExchangeNotFound)
 	logger.Error(errors.WithStack(util.ErrorExchangeNotFound))
-
+	util.ErrorJSON(w, util.ErrorExchangeNotFound)
 }

@@ -50,7 +50,6 @@ func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
-
 	userID := middleware.GetUserID(r)
 
 	scripts, query := DB.GetScripts(userID)

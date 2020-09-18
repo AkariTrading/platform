@@ -50,6 +50,7 @@ const (
 	pendingUserExpiryInDays = 5
 	sessionExpiryInSeconds  = int64(time.Hour / time.Second)
 	sessionTokenKey         = "session_token"
+	sessionTokenHeader      = "X-Session-Token"
 )
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -67,6 +68,13 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	// get existing creds
 	existingCred, query := DB.GetCredential(input.Email)
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	// get existing creds
+	user, query := DB.GetUser(input.Email)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
@@ -95,7 +103,9 @@ func login(w http.ResponseWriter, r *http.Request) {
 		Expires: time.Now().Add(time.Hour),
 	})
 
-	w.Header().Set("session_token", sessionToken)
+	w.Header().Set(sessionTokenHeader, sessionToken)
+
+	util.WriteJSON(w, user)
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
@@ -180,7 +190,6 @@ func register(w http.ResponseWriter, r *http.Request) {
 	var input CredentialModel
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
-		fmt.Println(err)
 		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
@@ -272,7 +281,6 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 
 	if token == "" {
-		fmt.Println("Url Param 'token' is missing")
 		w.WriteHeader(http.StatusBadRequest)
 	}
 
@@ -284,7 +292,6 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if time.Now().After(pendingUser.ExpirationDate) {
-		fmt.Println("Link is expired. Please resend confirmation email.")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -295,18 +302,15 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
 		newCred := db.Credential{Email: pendingUser.Email, Password: pendingUser.Password}
 		if err := DB.Gorm().Create(&newCred).Error; err != nil {
-			logger.Error(errors.WithStack(err))
 			return err
 		}
 
 		newUser := db.User{Email: pendingUser.Email}
 		if err := DB.Gorm().Create(&newUser).Error; err != nil {
-			logger.Error(errors.WithStack(err))
 			return err
 		}
 
 		if err := DB.Gorm().Where("email = ?", pendingUser.Email).Delete(&db.PendingUser{}).Error; err != nil {
-			logger.Error(errors.WithStack(err))
 			return err
 		}
 
@@ -314,7 +318,7 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		fmt.Println(err)
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
