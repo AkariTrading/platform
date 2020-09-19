@@ -11,7 +11,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/satori/go.uuid v1.2.0
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.6.3+incompatible
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
