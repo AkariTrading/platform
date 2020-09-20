@@ -7,8 +7,6 @@ github.com/akaritrading/engine v0.0.3 h1:Sk165S3zLTINopPaDnDwavr2I0pOgh/QNumEWSR
 github.com/akaritrading/engine v0.0.3/go.mod h1:26EG98CEbCuTa6C+mRDv9Yao5BdPYjQfihaZiV9qBqs=
 github.com/akaritrading/libs v0.0.3 h1:XUoNUOMwZgi4qvCDVP2581W/X14JZozOTiZsxDj360I=
 github.com/akaritrading/libs v0.0.3/go.mod h1:2sjOKQ2sJE5TbzgNe/BVdCeBN9wHQKh1MtA7MUs416E=
-github.com/akaritrading/libs v0.0.4 h1:DStYeW/IUjSvPzVNvbRzeVWGQkyV3oZ8s2PwECdYy7I=
-github.com/akaritrading/libs v0.0.4/go.mod h1:2sjOKQ2sJE5TbzgNe/BVdCeBN9wHQKh1MtA7MUs416E=
 github.com/akaritrading/libs v0.0.5 h1:8h3rh/ljLd1Kq9DEtjfpg1GeOaSBQ2YSmRlp/0vKH1k=
 github.com/akaritrading/libs v0.0.5/go.mod h1:2sjOKQ2sJE5TbzgNe/BVdCeBN9wHQKh1MtA7MUs416E=
 github.com/akaritrading/prices v0.0.4 h1:cz/C7Gd3/OF1sJpVYpnPnp9TeZOtaEvhdWdcNI3TywQ=

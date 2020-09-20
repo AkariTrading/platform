@@ -16,7 +16,6 @@ import (
 
 var DB *db.DB
 var redisHandle *redis.Handle
-var port = ":" + util.PlatformPort()
 
 func main() {
 
@@ -39,11 +38,9 @@ func main() {
 	r.Route("/ws", wsRoute)
 
 	server := &http.Server{
-		Addr:    port,
+		Addr:    ":" + util.PlatformPort(),
 		Handler: r,
 	}
-
-	println("Now serving on " + port)
 
 	server.ListenAndServe()
 }
