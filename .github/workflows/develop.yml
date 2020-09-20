@@ -12,7 +12,7 @@ env:
 jobs:
 
   build-publish:
-    name: Build, Publish, and Deploy
+    name: Build, Test, and Push Image
     runs-on: ubuntu-latest
 
     steps:
