@@ -16,7 +16,7 @@ import (
 
 var DB *db.DB
 var redisHandle *redis.Handle
-var port = ":6060"
+var port = ":" + util.PlatformPort()
 
 func main() {
 

@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/akaritrading/backtest v0.0.2
 	github.com/akaritrading/engine v0.0.3
-	github.com/akaritrading/libs v0.0.4
+	github.com/akaritrading/libs v0.0.5
 	github.com/akaritrading/prices v0.0.4
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/gorilla/websocket v1.4.2
