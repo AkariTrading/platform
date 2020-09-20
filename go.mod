@@ -17,8 +17,7 @@ require (
 	gorm.io/gorm v1.20.1
 )
 
-replace github.com/akaritrading/libs v0.0.4 => ../libs
-
+// replace github.com/akaritrading/libs v0.0.4 => ../libs
 // replace github.com/akaritrading/backtest/pkg v0.0.0 => ../backtest/pkg
 // replace github.com/akaritrading/prices/pkg v0.0.0 => ../prices/pkg
 // replace github.com/akaritrading/engine/pkg v0.0.0 => ../engine/pkg
