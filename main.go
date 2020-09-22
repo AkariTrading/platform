@@ -57,7 +57,7 @@ func apiRoute(r chi.Router) {
 		r.Route("/scripts", ScriptRoute)
 		r.Route("/history", HistoryRoute)
 		r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
-		r.Route("/scripts/{scriptID}/jobs", JobsRoute)
+		r.Route("/jobs", JobsRoute)
 	})
 }
 
@@ -71,8 +71,6 @@ func migrate() error {
 		&db.Script{},
 		&db.ScriptVersion{},
 		&db.ScriptJob{},
-		&db.ScriptTrade{},
-		&db.ScriptLog{},
 		&db.PendingUser{},
 		&db.Credential{},
 		&db.User{})
