@@ -49,5 +49,5 @@ jobs:
     # Sytem tests
     - name: Push Stable Image
       run: |-
-        docker tag $PROJECT_ID/$IMAGE "gcr.io/$PROJECT_ID/$IMAGE:stable"
+        docker tag gcr.io/$PROJECT_ID/$IMAGE "gcr.io/$PROJECT_ID/$IMAGE:stable"
         docker push "gcr.io/$PROJECT_ID/$IMAGE"
