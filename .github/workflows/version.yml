@@ -23,8 +23,6 @@ jobs:
     - name: Get the version
       id: get_version
       run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
-      env:
-          VERSION: ${{ steps.get_version.outputs.VERSION }}
 
     - name: "Set up gcloud"
       uses: GoogleCloudPlatform/github-actions/setup-gcloud@master
@@ -38,6 +36,8 @@ jobs:
 
     # Build the Docker image
     - name: Build Image
+      env:
+          VERSION: ${{ steps.get_version.outputs.VERSION }}
       run: |-
         docker build --build-arg GH_TOKEN=$GH_TOKEN -t "gcr.io/$PROJECT_ID/$IMAGE:$VERSION" -t "gcr.io/$PROJECT_ID/$IMAGE:$GITHUB_SHA" -t "gcr.io/$PROJECT_ID/$IMAGE:latest" .
 
