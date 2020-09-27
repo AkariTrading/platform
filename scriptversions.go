@@ -19,6 +19,7 @@ func ScriptVersionsRoute(r chi.Router) {
 
 func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 
+	DB := middleware.GetDB(r)
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
 
@@ -38,6 +39,7 @@ func getScriptVersionsHandle(w http.ResponseWriter, r *http.Request) {
 func createScriptVersionHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 	userID := middleware.GetUserID(r)
 
 	scriptID := getFromURL(r, "scriptID")

@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/akaritrading/prices/pkg/pricesclient"
@@ -13,7 +14,7 @@ import (
 )
 
 var binance = &pricesclient.Client{
-	Host:     util.PricesHost(),
+	Host:     flag.PricesHost(),
 	Exchange: "binance",
 }
 
@@ -31,7 +32,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 
 	maxSize, _ := strconv.ParseInt(r.URL.Query().Get("maxSize"), 10, 64)
 	if maxSize == 0 {
-		maxSize = util.DefaultHistorySampleSize()
+		maxSize = flag.DefaultHistorySampleSize()
 	}
 
 	// start, err := strconv.ParseInt(r.URL.Query().Get("start"), 10, 64)
@@ -46,7 +47,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if exchange == "binance" {
-		hist, err := binance.GetData(symbol, 0, maxSize)
+		hist, err := binance.GetHistory(symbol, 0, maxSize)
 		if err != nil {
 			logger.Error(errors.WithStack(err))
 			util.ErrorJSON(w, err)

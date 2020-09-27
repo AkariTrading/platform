@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/redis"
 	"github.com/akaritrading/libs/util"
@@ -33,7 +34,10 @@ type CompleteRegistrationModel struct {
 }
 
 // PublicRoutes -
-func PublicRoutes(r chi.Router) {
+func AuthRoutes(r chi.Router) {
+
+	r.Use(jsonResponse)
+
 	r.Post("/login", login)
 	r.Post("/logout", logout)
 	r.Post("/verifySession", verifySession)
@@ -56,8 +60,8 @@ const (
 func login(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
-	// get credentials
 	var input CredentialModel
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
@@ -66,21 +70,18 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// get existing creds
 	existingCred, query := DB.GetCredential(input.Email)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
 	}
 
-	// get existing creds
 	user, query := DB.GetUser(input.Email)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
 	}
 
-	// compare inbound and stored passwords
 	err = bcrypt.CompareHashAndPassword([]byte(existingCred.Password), []byte(input.Password))
 	if err != nil {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -88,9 +89,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// store session cookie
-	sessionToken := db.NewUUID()
-	_, err = redisHandle.Do(redis.SetKeyExpire, sessionToken, sessionExpiryInSeconds, input.Email)
+	sessionToken := util.CreateID()
+	_, err = redisHandle.Do(redis.SetKeyExpire, sessionToken, sessionExpiryInSeconds, user.ID)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error(errors.WithStack(err))
@@ -98,9 +98,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.SetCookie(w, &http.Cookie{
-		Name:    sessionTokenKey,
-		Value:   sessionToken,
-		Expires: time.Now().Add(time.Hour),
+		Name:     sessionTokenKey,
+		Value:    sessionToken,
+		Expires:  time.Now().Add(time.Hour),
+		HttpOnly: true,
 	})
 
 	w.Header().Set(sessionTokenHeader, sessionToken)
@@ -185,6 +186,7 @@ func verifySession(w http.ResponseWriter, r *http.Request) {
 func register(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	// get credentials
 	var input CredentialModel
@@ -221,7 +223,8 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create pending user
-	token := db.NewUUID()
+	token := util.CreateID()
+
 	newPendingUser := db.PendingUser{
 		Email:          input.Email,
 		Password:       string(hashPassword),
@@ -244,6 +247,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	// get email
 	var input EmailModel
@@ -262,7 +266,7 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// replace previous token
-	pendingUser.Token = db.NewUUID()
+	pendingUser.Token = util.CreateID()
 	if DB.Gorm().Save(&pendingUser).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error(errors.WithStack(err))
@@ -270,13 +274,14 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("http://%s/completeRegistration?token=%v", util.PlatformHost(), pendingUser.Token)
+	confirmationURL := fmt.Sprintf("http://%s/completeRegistration?token=%v", flag.PlatformHost(), pendingUser.Token)
 	SendEmail(input.Email, confirmationURL)
 }
 
 func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	token := r.URL.Query().Get("token")
 
@@ -330,6 +335,7 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	// get email
 	var input EmailModel
@@ -348,7 +354,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// replace previous token
-	cred.ResetToken = db.NewUUID()
+	cred.ResetToken = util.CreateID()
 	if DB.Gorm().Save(&cred).Error != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		logger.Error(errors.WithStack(err))

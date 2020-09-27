@@ -2,43 +2,42 @@ package main
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 
 	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/log"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/redis"
-	"github.com/akaritrading/libs/util"
 )
 
-var DB *db.DB
 var redisHandle *redis.Handle
 
 func main() {
 
 	log.Init()
 
-	DB = initDB()
-	migrate()
+	db := initDB()
+	migrate(db)
 
-	redisHandle = initRedis()
-	redisHandle.Connect()
+	redisHandle = redis.DefaultConnect()
 	defer redisHandle.Close()
 
 	engineclient.Init(redisHandle)
 
 	r := chi.NewRouter()
-	r.Use(middleware.RequestLogger("platform"))
+	r.Use(middleware.RequestContext("platform", db))
 	r.Use(middleware.Recoverer)
 
+	r.Route("/auth", AuthRoutes)
 	r.Route("/api", apiRoute)
 	r.Route("/ws", wsRoute)
 
 	server := &http.Server{
-		Addr:    ":" + util.PlatformPort(),
+		Addr:    flag.PlatformHost(),
 		Handler: r,
 	}
 
@@ -46,19 +45,12 @@ func main() {
 }
 
 func apiRoute(r chi.Router) {
-
-	r.Use(jsonResponse) // adds json content header
-
-	r.Route("/", PublicRoutes)
-	r.Route("/users", UsersRoutes)
-
-	r.Group(func(r chi.Router) {
-		r.Use(authentication) // authentication middleware
-		r.Route("/scripts", ScriptRoute)
-		r.Route("/history", HistoryRoute)
-		r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
-		r.Route("/jobs", JobsRoute)
-	})
+	r.Use(jsonResponse)
+	r.Use(authentication)
+	r.Route("/scripts", ScriptRoute)
+	r.Route("/history", HistoryRoute)
+	r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
+	r.Route("/jobs", JobsRoute)
 }
 
 func wsRoute(r chi.Router) {
@@ -66,8 +58,8 @@ func wsRoute(r chi.Router) {
 	r.Get("/backtest", backtest)
 }
 
-func migrate() error {
-	return DB.Gorm().AutoMigrate(
+func migrate(d *db.DB) error {
+	return d.Gorm().AutoMigrate(
 		&db.Script{},
 		&db.ScriptVersion{},
 		&db.ScriptJob{},
@@ -77,18 +69,9 @@ func migrate() error {
 }
 
 func initDB() *db.DB {
-	db, err := db.Open(util.PostgresHost(), util.PostgresUser(), util.PostgresDBName(), util.PostgresPassword())
+	db, err := db.DefaultOpen()
 	if err != nil {
-		// logger.Fatal(errors.Wrap(err, "failed initializing db"))
+		log.Default().Fatal(errors.New("platform could not connect to postgres. exiting."))
 	}
 	return db
-}
-
-func initRedis() *redis.Handle {
-	return &redis.Handle{
-		Host:        util.RedisHost(),
-		MaxActive:   util.RedisMaxActive(),
-		MaxIdle:     util.RedisMaxIdle(),
-		IdleTimeout: time.Minute * 5,
-	}
 }

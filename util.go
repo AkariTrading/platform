@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/akaritrading/libs/util"
+	"github.com/akaritrading/libs/flag"
 	"github.com/go-chi/chi"
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-var sendGridKey = util.SendGridKey()
+var sendGridKey = flag.SendGridKey()
 var sendGridClient = sendgrid.NewSendClient(sendGridKey)
 
 func getFromURL(r *http.Request, key string) string {

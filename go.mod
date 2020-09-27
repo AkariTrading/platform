@@ -1,6 +1,6 @@
 module github.com/akaritrading/platform
 
-go 1.14
+go 1.15
 
 require (
 	github.com/akaritrading/backtest v0.0.2
@@ -17,8 +17,9 @@ require (
 	gorm.io/gorm v1.20.1
 )
 
-// replace github.com/akaritrading/libs v0.0.4 => ../libs
+replace github.com/akaritrading/libs v0.0.5 => ../libs
+replace github.com/akaritrading/prices v0.0.4 => ../prices
+
 // replace github.com/akaritrading/backtest/pkg v0.0.0 => ../backtest/pkg
-// replace github.com/akaritrading/prices/pkg v0.0.0 => ../prices/pkg
 // replace github.com/akaritrading/engine/pkg v0.0.0 => ../engine/pkg
 // replace github.com/akaritrading/platform/pkg/engine v0.0.0 => ./pkg

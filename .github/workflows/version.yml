@@ -1,4 +1,4 @@
-name: Build Version Image and 
+name: Build and Publish Version Image
 
 on:
   push:
@@ -47,6 +47,10 @@ jobs:
         docker push "gcr.io/$PROJECT_ID/$IMAGE"
 
     # Sytem tests
+      # HERE
+
+
+    # then tag as stable and push  
     - name: Push Stable Image
       run: |-
         docker tag gcr.io/$PROJECT_ID/$IMAGE "gcr.io/$PROJECT_ID/$IMAGE:stable"

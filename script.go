@@ -34,6 +34,7 @@ func ScriptRoute(r chi.Router) {
 func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	scriptID := getFromURL(r, "scriptID")
 	userID := middleware.GetUserID(r)
@@ -50,6 +51,7 @@ func getScriptHandle(w http.ResponseWriter, r *http.Request) {
 func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 	userID := middleware.GetUserID(r)
 
 	scripts, query := DB.GetScripts(userID)
@@ -64,7 +66,7 @@ func getScriptsHandle(w http.ResponseWriter, r *http.Request) {
 func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
-
+	DB := middleware.GetDB(r)
 	userID := middleware.GetUserID(r)
 
 	var script ScriptRequest
@@ -92,7 +94,7 @@ func createScriptHandle(w http.ResponseWriter, r *http.Request) {
 func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
-
+	DB := middleware.GetDB(r)
 	userID := middleware.GetUserID(r)
 
 	scriptID := getFromURL(r, "scriptID")
@@ -122,6 +124,7 @@ func updateScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 
+	DB := middleware.GetDB(r)
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
 	scriptID := getFromURL(r, "scriptID")

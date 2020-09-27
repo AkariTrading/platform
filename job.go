@@ -22,6 +22,7 @@ func JobsRoute(r chi.Router) {
 func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 	userID := middleware.GetUserID(r)
 	engineClient := engineclient.GetClient(logger)
 
@@ -57,6 +58,7 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
+	DB := middleware.GetDB(r)
 	engineClient := engineclient.GetClient(logger)
 
 	newJob, err := jobRequest(r.Body, userID)
@@ -109,7 +111,7 @@ func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {
 	}
 
 	job.State = make(map[string]interface{})
-	job.ID = db.NewUUID()
+	job.ID = util.CreateID()
 
 	return &job, nil
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/akaritrading/libs/middleware"
@@ -11,13 +12,13 @@ import (
 func authentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		// DEBUG
-		ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
-		next.ServeHTTP(w, r.WithContext(ctx))
-		return
-		// DEBUG
+		logger := middleware.GetLogger(r)
 
-		// We can obtain the session token from the requests cookies, which come with every request
+		// DEBUG
+		// ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
+		// next.ServeHTTP(w, r.WithContext(ctx))
+		// return
+		// DEBUG
 
 		var sessionToken string
 
@@ -27,23 +28,27 @@ func authentication(next http.Handler) http.Handler {
 			sessionToken = c.Value
 		}
 
+		fmt.Println("token ", sessionToken)
+
 		if sessionToken == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		// We then get the name of the user from our cache, where we set the session token
 		response, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
+
+		fmt.Println(response, err)
+
 		if err != nil {
-			// error fetching from cache
+			logger.Error(err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		if response == "" {
-			// not present in cache
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
+
 		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), middleware.USERID, response)))
 	})
 }

@@ -4,14 +4,14 @@ import (
 	"net/http"
 
 	"github.com/akaritrading/backtest/pkg/backtestclient"
+	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
-	"github.com/akaritrading/libs/util"
 	"github.com/gorilla/websocket"
 	"github.com/pkg/errors"
 )
 
 var backtestClient = backtestclient.BacktestClient{
-	Host: util.BacktestHost(),
+	Host: flag.BacktestHost(),
 }
 
 var upgrader = websocket.Upgrader{
