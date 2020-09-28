@@ -118,6 +118,16 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// needs a connected exchange if cycle eg: not dry run
+	if newJob.Type == "cycle" {
+		_, query := DB.GetConnectedExchange(userID, newJob.ExchangeID)
+		if query.Error != gorm.ErrRecordNotFound {
+			logger.Error(errors.WithStack(query.Error))
+			util.ErrorJSON(w, util.ErrorExchangeUserCredsNotFound)
+			return
+		}
+	}
+
 	_, query := DB.GetScript(userID, newJob.ScriptID)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))

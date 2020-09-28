@@ -22,6 +22,7 @@ replace github.com/akaritrading/backtest v0.0.0 => ../backtest
 replace github.com/akaritrading/libs v0.0.0 => ../libs
 
 replace github.com/akaritrading/prices v0.0.0 => ../prices
+
 replace github.com/akaritrading/engine v0.0.0 => ../engine
 
 // replace github.com/akaritrading/engine/pkg v0.0.0 => ../engine/pkg

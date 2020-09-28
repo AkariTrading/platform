@@ -1,16 +1,6 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUWq3EgK3CesDbo8upS2Vm9/P3FtgI+Jk=
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
-github.com/akaritrading/backtest v0.0.2 h1:K2+Kt4ixMF++fggh+JnPXQiFs1oATbR1aZASuQAKOfI=
-github.com/akaritrading/backtest v0.0.2/go.mod h1:zDCM0Qbac9AWeo5mWEkeNj3GfZS8OAZHA+Mwi58U9HQ=
-github.com/akaritrading/engine v0.0.3 h1:Sk165S3zLTINopPaDnDwavr2I0pOgh/QNumEWSR+ZVQ=
-github.com/akaritrading/engine v0.0.3/go.mod h1:26EG98CEbCuTa6C+mRDv9Yao5BdPYjQfihaZiV9qBqs=
-github.com/akaritrading/libs v0.0.3 h1:XUoNUOMwZgi4qvCDVP2581W/X14JZozOTiZsxDj360I=
-github.com/akaritrading/libs v0.0.3/go.mod h1:2sjOKQ2sJE5TbzgNe/BVdCeBN9wHQKh1MtA7MUs416E=
-github.com/akaritrading/libs v0.0.5 h1:8h3rh/ljLd1Kq9DEtjfpg1GeOaSBQ2YSmRlp/0vKH1k=
-github.com/akaritrading/libs v0.0.5/go.mod h1:2sjOKQ2sJE5TbzgNe/BVdCeBN9wHQKh1MtA7MUs416E=
-github.com/akaritrading/prices v0.0.4 h1:cz/C7Gd3/OF1sJpVYpnPnp9TeZOtaEvhdWdcNI3TywQ=
-github.com/akaritrading/prices v0.0.4/go.mod h1:CL9FI9WCHE++yFNrSiyxHCzL6Ym3wS/8jobZYpcfJKg=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
 github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e/go.mod h1:F5haX7vjVVG0kc13fIWeqUViNPyEJxv/OmvnBo0Yme4=

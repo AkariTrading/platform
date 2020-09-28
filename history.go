@@ -13,7 +13,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-var binance = &pricesclient.Client{
+var pricesClient = &pricesclient.Client{
 	Host:     flag.PricesHost(),
 	Exchange: "binance",
 }
@@ -47,7 +47,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if exchange == "binance" {
-		hist, err := binance.GetHistory(symbol, 0, maxSize)
+		hist, err := pricesClient.GetHistory(symbol, 0, maxSize)
 		if err != nil {
 			logger.Error(errors.WithStack(err))
 			util.ErrorJSON(w, err)
