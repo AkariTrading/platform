@@ -15,9 +15,9 @@ func authentication(next http.Handler) http.Handler {
 		logger := middleware.GetLogger(r)
 
 		// DEBUG
-		// ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
-		// next.ServeHTTP(w, r.WithContext(ctx))
-		// return
+		ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
+		next.ServeHTTP(w, r.WithContext(ctx))
+		return
 		// DEBUG
 
 		var sessionToken string

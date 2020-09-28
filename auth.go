@@ -102,6 +102,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 		Value:    sessionToken,
 		Expires:  time.Now().Add(time.Hour),
 		HttpOnly: true,
+		Path:     "/",
 	})
 
 	w.Header().Set(sessionTokenHeader, sessionToken)
