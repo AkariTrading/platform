@@ -18,55 +18,9 @@ import (
 )
 
 func JobsRoute(r chi.Router) {
-	r.Post("/", runScriptHandle)
 	r.Delete("/{jobID}", stopScriptHandle)
+	r.Post("/", runScriptHandle)
 	r.Get("/{jobID}/logs", scriptLogs)
-}
-
-func scriptLogs(w http.ResponseWriter, r *http.Request) {
-
-	DB := middleware.GetDB(r)
-	logger := middleware.GetLogger(r)
-	userID := middleware.GetUserID(r)
-	jobID := getFromURL(r, "jobID")
-
-	createdBeforeMs, _ := strconv.ParseInt(r.URL.Query().Get("createdBefore"), 10, 64)
-	var createdBefore time.Time
-	if createdBeforeMs == 0 {
-		createdBefore = time.Now()
-	} else {
-		createdBefore = time.Unix(createdBeforeMs/1000, 0)
-	}
-
-	createdAfterMs, _ := strconv.ParseInt(r.URL.Query().Get("createdAfter"), 10, 64)
-	createdAfter := time.Unix(createdAfterMs/1000, 0)
-
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
-	if limit == 0 {
-		limit = 100
-	}
-
-	fmt.Println(createdBefore, createdAfter)
-
-	job, query := DB.GetScriptJob(jobID)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	_, query = DB.GetScript(userID, job.ScriptID)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	logs, query := DB.GetScriptJobLogs(jobID, createdBefore, createdAfter, int(limit))
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	util.WriteJSON(w, logs)
 }
 
 func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
@@ -154,6 +108,52 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+}
+
+func scriptLogs(w http.ResponseWriter, r *http.Request) {
+
+	DB := middleware.GetDB(r)
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+	jobID := getFromURL(r, "jobID")
+
+	createdBeforeMs, _ := strconv.ParseInt(r.URL.Query().Get("createdBefore"), 10, 64)
+	var createdBefore time.Time
+	if createdBeforeMs == 0 {
+		createdBefore = time.Now()
+	} else {
+		createdBefore = time.Unix(createdBeforeMs/1000, 0)
+	}
+
+	createdAfterMs, _ := strconv.ParseInt(r.URL.Query().Get("createdAfter"), 10, 64)
+	createdAfter := time.Unix(createdAfterMs/1000, 0)
+
+	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
+	if limit == 0 {
+		limit = 100
+	}
+
+	fmt.Println(createdBefore, createdAfter)
+
+	job, query := DB.GetScriptJob(jobID)
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	_, query = DB.GetScript(userID, job.ScriptID)
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	logs, query := DB.GetScriptJobLogs(jobID, createdBefore, createdAfter, int(limit))
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	util.WriteJSON(w, logs)
 }
 
 func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {

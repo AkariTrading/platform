@@ -32,11 +32,6 @@ func getExchanges(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
 
-	if userID != getFromURL(r, "userID") {
-		util.ErrorJSON(w, errors.New("user ids do not match"))
-		return
-	}
-
 	conn, query := DB.GetConnectedExchanges(userID)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
@@ -50,11 +45,6 @@ func connectExchange(w http.ResponseWriter, r *http.Request) {
 	DB := middleware.GetDB(r)
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
-
-	if userID != getFromURL(r, "userID") {
-		util.ErrorJSON(w, errors.New("user ids do not match"))
-		return
-	}
 
 	var req ExchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -85,16 +75,18 @@ func connectExchange(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := DB.Gorm().Create(&db.ExchangeConnection{
+	exc := &db.ExchangeConnection{
 		APIKey:    encAPIKey,
 		APISecret: encAPISecret,
 		Exchange:  req.Exchange,
 		UserID:    userID,
-	})
+	}
 
-	if err := db.QueryError(w, query); err != nil {
+	if err := db.QueryError(w, DB.Gorm().Create(exc)); err != nil {
 		logger.Error(errors.WithStack(err))
 	}
+
+	util.WriteJSON(w, exc)
 }
 
 func testExchange(req ExchangeRequest) error {
@@ -114,11 +106,6 @@ func removeExchange(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
 	ID := getFromURL(r, "exchangeID")
-
-	if userID != getFromURL(r, "userID") {
-		util.ErrorJSON(w, errors.New("user ids do not match"))
-		return
-	}
 
 	_, query := DB.GetConnectedExchange(userID, ID)
 	if err := db.QueryError(w, query); err != nil {

@@ -41,7 +41,7 @@ func main() {
 		Handler: r,
 	}
 
-	server.ListenAndServe()
+	log.Default().Fatal(server.ListenAndServe())
 }
 
 func apiRoute(r chi.Router) {
@@ -51,7 +51,7 @@ func apiRoute(r chi.Router) {
 	r.Route("/history", HistoryRoute)
 	r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
 	r.Route("/jobs", JobsRoute)
-	r.Route("/users/{userID}/exchanges", ExchangesRoute)
+	r.Route("/userExchanges", ExchangesRoute)
 
 }
 
