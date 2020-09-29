@@ -14,7 +14,7 @@ require (
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect
 	github.com/sendgrid/sendgrid-go v3.6.3+incompatible
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
-	gorm.io/gorm v1.20.1
+	gorm.io/gorm v1.20.2
 )
 
 replace github.com/akaritrading/backtest v0.0.0 => ../backtest

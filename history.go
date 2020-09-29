@@ -7,16 +7,10 @@ import (
 	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
-	"github.com/akaritrading/prices/pkg/pricesclient"
 	"github.com/go-chi/chi"
 	chimiddleware "github.com/go-chi/chi/middleware"
 	"github.com/pkg/errors"
 )
-
-var pricesClient = &pricesclient.Client{
-	Host:     flag.PricesHost(),
-	Exchange: "binance",
-}
 
 func HistoryRoute(r chi.Router) {
 	r.Use(chimiddleware.Compress(5))
@@ -47,7 +41,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if exchange == "binance" {
-		hist, err := pricesClient.GetHistory(symbol, 0, maxSize)
+		hist, err := pricesBinanceClient.GetHistory(symbol, 0, maxSize)
 		if err != nil {
 			logger.Error(errors.WithStack(err))
 			util.ErrorJSON(w, err)

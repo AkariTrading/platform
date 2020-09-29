@@ -88,14 +88,13 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScriptVersion(newJob.VersionID)
+	jobs, query := DB.GetScriptJobByScriptID(newJob.ScriptID, true)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
 	}
 
-	_, query = DB.GetRunningScriptJobByVersion(newJob.ScriptID, newJob.VersionID)
-	if query.Error != gorm.ErrRecordNotFound {
+	if len(jobs) > 0 {
 		logger.Error(errors.WithStack(util.ErrorScriptRunning))
 		util.ErrorJSON(w, util.ErrorScriptRunning)
 		return
@@ -108,6 +107,8 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+
+	util.WriteJSON(w, newJob)
 }
 
 func scriptLogs(w http.ResponseWriter, r *http.Request) {
@@ -162,7 +163,7 @@ func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {
 	json.NewDecoder(r).Decode(&job)
 
 	// exchange, symbolA, symbolB, portfolio, type CANNOT be null
-	if job.Exchange == "" || job.SymbolA == "" || job.Portfolio == nil || job.ScriptID == "" || job.VersionID == "" {
+	if job.Exchange == "" || job.SymbolA == "" || job.Portfolio == nil || job.ScriptID == "" || job.ExchangeID == "" {
 		return nil, errors.New("missing fields")
 	}
 
@@ -172,6 +173,7 @@ func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {
 
 	job.State = make(map[string]interface{})
 	job.ID = util.CreateID()
+	job.UserID = userID
 
 	return &job, nil
 }

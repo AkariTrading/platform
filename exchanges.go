@@ -91,7 +91,7 @@ func connectExchange(w http.ResponseWriter, r *http.Request) {
 
 func testExchange(req ExchangeRequest) error {
 
-	client := &binance.UserClient{
+	client := &binance.BinanceClient{
 		UserClient: exchange.UserClient{ApiKey: req.ApiKey, Secret: req.ApiSecret},
 	}
 

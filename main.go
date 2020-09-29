@@ -12,13 +12,20 @@ import (
 	"github.com/akaritrading/libs/log"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/redis"
+	"github.com/akaritrading/prices/pkg/pricesclient"
 )
+
+var pricesBinanceClient = &pricesclient.Client{
+	Host: flag.PricesHost(),
+}
 
 var redisHandle *redis.Handle
 
 func main() {
 
 	log.Init()
+
+	pricesBinanceClient.SetToBinance()
 
 	db := initDB()
 	migrate(db)
