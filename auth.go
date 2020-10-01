@@ -229,7 +229,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	newPendingUser := db.PendingUser{
 		Email:          input.Email,
 		Password:       string(hashPassword),
-		ExpirationDate: time.Now().AddDate(0, 0, pendingUserExpiryInDays),
+		ExpirationDate: time.Now().Add(time.Hour * 24 * pendingUserExpiryInDays),
 		Token:          token,
 	}
 	if err := DB.Gorm().Create(&newPendingUser).Error; err != nil {
@@ -239,10 +239,10 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("http://localhost:6060/api/completeRegistration?token=%v", token)
-	SendEmail(input.Email, confirmationURL)
 
-	w.WriteHeader(http.StatusOK)
+	if err := SendEmail(input.Email, fmt.Sprintf("http://%s/auth/completeRegistration?token=%v", "localhost:6000", token)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
@@ -275,11 +275,14 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send registration email
-	confirmationURL := fmt.Sprintf("http://%s/completeRegistration?token=%v", flag.PlatformHost(), pendingUser.Token)
-	SendEmail(input.Email, confirmationURL)
+	if err := SendEmail(input.Email, fmt.Sprintf("http://%s/auth/completeRegistration?token=%v", "localhost:6000", pendingUser.Token)); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
 }
 
 func completeRegistration(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Println("ASDASD ASD ASd")
 
 	logger := middleware.GetLogger(r)
 	DB := middleware.GetDB(r)
@@ -289,6 +292,14 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	if token == "" {
 		w.WriteHeader(http.StatusBadRequest)
 	}
+
+	fmt.Println(token)
+
+	var users []db.PendingUser
+
+	DB.Gorm().Find(&users)
+
+	fmt.Println(users)
 
 	// get pendingUser
 	pendingUser, query := DB.GetPendingUserWithToken(token)
@@ -303,7 +314,6 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// create new user
-
 	err := DB.Gorm().Transaction(func(tx *gorm.DB) error {
 
 		newCred := db.Credential{Email: pendingUser.Email, Password: pendingUser.Password}
@@ -329,7 +339,7 @@ func completeRegistration(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "http://localhost:8080/login?registrationComplete=true", http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("http://%s/login?registrationComplete=true", flag.PlatformHost()), http.StatusSeeOther)
 }
 
 // https://security.stackexchange.com/questions/86913/should-password-reset-tokens-be-hashed-when-stored-in-a-database
@@ -363,7 +373,7 @@ func resetPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// send resetpassword email
-	confirmationURL := fmt.Sprintf("http://localhost/resetPassword?token=%v", cred.ResetToken)
+	confirmationURL := fmt.Sprintf("http://localhost:6000/resetPassword?token=%v", cred.ResetToken)
 	SendEmail(input.Email, confirmationURL)
 }
 

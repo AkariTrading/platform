@@ -10,27 +10,21 @@ import (
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
-var sendGridKey = flag.SendGridKey()
-var sendGridClient = sendgrid.NewSendClient(sendGridKey)
+var sendGridClient = sendgrid.NewSendClient(flag.SendGridKey())
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
 }
 
 // SendEmail -
-func SendEmail(targetEmail string, url string) {
-	from := mail.NewEmail("Akari Trading Test", "akari.trading.test@gmail.com")
+func SendEmail(targetEmail string, url string) error {
+
+	from := mail.NewEmail("Akari Trading Test", "esadakar@gmail.com")
 	subject := "Welcome to Akari Trading - Verify Your Account"
 	to := mail.NewEmail("AkariTrading Developer", targetEmail)
 	plainTextContent := "Welcome to Akari Trading. :happypepe:"
 	htmlContent := fmt.Sprintf("<a href='%v'> Verify your email. </a>", url)
 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	response, err := sendGridClient.Send(message)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		fmt.Println(response.StatusCode)
-		fmt.Println(response.Body)
-		fmt.Println(response.Headers)
-	}
+	_, err := sendGridClient.Send(message)
+	return err
 }

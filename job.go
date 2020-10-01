@@ -163,11 +163,7 @@ func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {
 	json.NewDecoder(r).Decode(&job)
 
 	// exchange, symbolA, symbolB, portfolio, type CANNOT be null
-	if job.Exchange == "" || job.SymbolA == "" || job.Portfolio == nil || job.ScriptID == "" || job.ExchangeID == "" {
-		return nil, errors.New("missing fields")
-	}
-
-	if _, ok := engineclient.ScriptJobs[job.Type]; !ok {
+	if job.Exchange == "" || job.SymbolA == "" || job.Balance == nil || job.ScriptID == "" || job.ExchangeID == "" {
 		return nil, errors.New("missing fields")
 	}
 
