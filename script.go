@@ -135,36 +135,17 @@ func deleteScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScriptJob(scriptID)
-	if query.Error != gorm.ErrRecordNotFound {
-		logger.Error(errors.WithStack(query.Error))
-		util.ErrorJSON(w, util.ErrorScriptRunning)
-		return
-	}
-
 	err := DB.Gorm().Transaction(func(tx *gorm.DB) error {
 
-		err := tx.Where("script_id = ?", scriptID).Delete(&db.ScriptJob{}).Error
+		err := tx.Where("script_id = ?", scriptID).Delete(&db.ScriptVersion{}).Error
 		if err != nil {
 			return err
-		}
-		err = tx.Where("script_id = ?", scriptID).Delete(&db.ScriptTrade{}).Error
-		if err != nil {
-			return err
-		}
-		err = tx.Where("script_id = ?", scriptID).Delete(&db.ScriptLog{}).Error
-		if err != nil {
-			return err
-		}
-		err = tx.Where("id = ?", scriptID).Delete(&db.Script{}).Error
-		if err != nil {
-			return err
-		}
-		err = tx.Where("id = ?", scriptID).Delete(&db.Script{}).Error
-		if err != nil {
-			return err
-		}
 
+		}
+		err = tx.Where("id = ?", scriptID).Delete(&db.Script{}).Error
+		if err != nil {
+			return err
+		}
 		return nil
 	})
 

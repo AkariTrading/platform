@@ -71,7 +71,7 @@ func migrate(d *db.DB) error {
 	return d.Gorm().AutoMigrate(
 		&db.Script{},
 		&db.ScriptVersion{},
-		&db.ScriptJob{},
+		&db.Job{},
 		&db.PendingUser{},
 		&db.Credential{},
 		&db.ExchangeConnection{},

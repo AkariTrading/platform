@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"github.com/akaritrading/libs/middleware"
@@ -28,16 +27,12 @@ func authentication(next http.Handler) http.Handler {
 			sessionToken = c.Value
 		}
 
-		fmt.Println("token ", sessionToken)
-
 		if sessionToken == "" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
 		response, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
-
-		fmt.Println(response, err)
 
 		if err != nil {
 			logger.Error(err)

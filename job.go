@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
@@ -18,12 +17,13 @@ import (
 )
 
 func JobsRoute(r chi.Router) {
-	r.Delete("/{jobID}", stopScriptHandle)
-	r.Post("/", runScriptHandle)
-	r.Get("/{jobID}/logs", scriptLogs)
+	r.Delete("/{jobID}", stopJob)
+	r.Post("/", runJob)
+	r.Get("/{jobID}/logs", logs)
+	r.Get("/{jobID}", getJob)
 }
 
-func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
+func stopJob(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
 	DB := middleware.GetDB(r)
@@ -32,7 +32,7 @@ func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 
 	jobID := getFromURL(r, "jobID")
 
-	job, query := DB.GetScriptJob(jobID)
+	job, query := DB.GetJobByUserID(userID, jobID)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
@@ -44,12 +44,6 @@ func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, query = DB.GetScript(userID, job.ScriptID)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
 	err := engineClient.StopScript(job.NodeIP, jobID)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
@@ -58,7 +52,7 @@ func stopScriptHandle(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func runScriptHandle(w http.ResponseWriter, r *http.Request) {
+func runJob(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
 	userID := middleware.GetUserID(r)
@@ -68,7 +62,7 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 	newJob, err := jobRequest(r.Body, userID)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
-		w.WriteHeader(http.StatusBadRequest)
+		util.ErrorJSON(w, err)
 		return
 	}
 
@@ -82,24 +76,6 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	_, query := DB.GetScript(userID, newJob.ScriptID)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	jobs, query := DB.GetScriptJobByScriptID(newJob.ScriptID, true)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	if len(jobs) > 0 {
-		logger.Error(errors.WithStack(util.ErrorScriptRunning))
-		util.ErrorJSON(w, util.ErrorScriptRunning)
-		return
-	}
-
 	err = engineClient.StartScript(newJob)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
@@ -111,7 +87,7 @@ func runScriptHandle(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, newJob)
 }
 
-func scriptLogs(w http.ResponseWriter, r *http.Request) {
+func logs(w http.ResponseWriter, r *http.Request) {
 
 	DB := middleware.GetDB(r)
 	logger := middleware.GetLogger(r)
@@ -134,21 +110,13 @@ func scriptLogs(w http.ResponseWriter, r *http.Request) {
 		limit = 100
 	}
 
-	fmt.Println(createdBefore, createdAfter)
-
-	job, query := DB.GetScriptJob(jobID)
+	_, query := DB.GetJobByUserID(userID, jobID)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
 	}
 
-	_, query = DB.GetScript(userID, job.ScriptID)
-	if err := db.QueryError(w, query); err != nil {
-		logger.Error(errors.WithStack(err))
-		return
-	}
-
-	logs, query := DB.GetScriptJobLogs(jobID, createdBefore, createdAfter, int(limit))
+	logs, query := DB.GetJobLogs(jobID, createdBefore, createdAfter, int(limit))
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
@@ -157,14 +125,34 @@ func scriptLogs(w http.ResponseWriter, r *http.Request) {
 	util.WriteJSON(w, logs)
 }
 
+func getJob(w http.ResponseWriter, r *http.Request) {
+
+	DB := middleware.GetDB(r)
+	logger := middleware.GetLogger(r)
+	userID := middleware.GetUserID(r)
+	jobID := getFromURL(r, "jobID")
+
+	job, query := DB.GetJobByUserID(userID, jobID)
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	util.WriteJSON(w, job)
+}
+
 func jobRequest(r io.Reader, userID string) (*engineclient.JobRequest, error) {
 
 	var job engineclient.JobRequest
 	json.NewDecoder(r).Decode(&job)
 
 	// exchange, symbolA, symbolB, portfolio, type CANNOT be null
-	if job.Exchange == "" || job.SymbolA == "" || job.Balance == nil || job.ScriptID == "" || job.ExchangeID == "" {
+	if job.Exchange == "" || job.SymbolA == "" || job.SymbolB == "" || job.ExchangeID == "" || job.Body == "" {
 		return nil, errors.New("missing fields")
+	}
+
+	if job.Balance == nil {
+		job.Balance = map[string]float64{}
 	}
 
 	job.State = make(map[string]interface{})
