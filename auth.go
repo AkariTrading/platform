@@ -282,8 +282,6 @@ func resendRegistrationEmail(w http.ResponseWriter, r *http.Request) {
 
 func completeRegistration(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Println("ASDASD ASD ASd")
-
 	logger := middleware.GetLogger(r)
 	DB := middleware.GetDB(r)
 

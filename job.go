@@ -17,10 +17,10 @@ import (
 )
 
 func JobsRoute(r chi.Router) {
+	r.Get("/{jobID}", getJob)
 	r.Delete("/{jobID}", stopJob)
 	r.Post("/", runJob)
 	r.Get("/{jobID}/logs", logs)
-	r.Get("/{jobID}", getJob)
 }
 
 func stopJob(w http.ResponseWriter, r *http.Request) {
