@@ -22,7 +22,7 @@ Request
 }
 ```
 
-### /auth/logout
+### POST /auth/logout
 
 
 ## Api - Script Routes
@@ -63,6 +63,8 @@ Request
 }
 ```
 
+### DELETE /api/scripts/{scriptID}
+
 ### GET /api/scripts/{scriptID}/versions
 
 Response
@@ -84,7 +86,6 @@ Request
 }
 ```
 
-### DELETE /api/scripts/{scriptID}
 
 
 ## Api - Symbol History Routes
@@ -183,9 +184,9 @@ Response
 ```
 {
     "id": "",
-	"userID": "",
-	"exchange": "",
-	"createdAt": "0001-01-01T00:00:00Z"
+    "userID": "",
+    "exchange": "",
+    "createdAt": "0001-01-01T00:00:00Z"
 }
 ```
 
