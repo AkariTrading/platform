@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/akaritrading/engine/pkg/engineclient"
@@ -94,7 +93,7 @@ func logs(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.GetUserID(r)
 	jobID := getFromURL(r, "jobID")
 
-	createdBeforeMs, _ := strconv.ParseInt(r.URL.Query().Get("createdBefore"), 10, 64)
+	createdBeforeMs := URLQueryInt(r, "createdBefore")
 	var createdBefore time.Time
 	if createdBeforeMs == 0 {
 		createdBefore = time.Now()
@@ -102,10 +101,10 @@ func logs(w http.ResponseWriter, r *http.Request) {
 		createdBefore = time.Unix(createdBeforeMs/1000, 0)
 	}
 
-	createdAfterMs, _ := strconv.ParseInt(r.URL.Query().Get("createdAfter"), 10, 64)
-	createdAfter := time.Unix(createdAfterMs/1000, 0)
+	// createdAfterMs := URLQueryInt(r, "createdAfter")
+	// createdAfter := time.Unix(createdAfterMs/1000, 0)
 
-	limit, _ := strconv.ParseInt(r.URL.Query().Get("limit"), 10, 64)
+	limit := URLQueryInt(r, "limit")
 	if limit == 0 {
 		limit = 100
 	}
@@ -116,7 +115,7 @@ func logs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, query := DB.GetJobLogs(jobID, createdBefore, createdAfter, int(limit))
+	logs, query := DB.GetJobLogs(jobID, createdBefore, int(limit))
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return

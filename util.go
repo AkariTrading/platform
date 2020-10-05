@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/akaritrading/libs/flag"
 	"github.com/go-chi/chi"
@@ -14,6 +15,11 @@ var sendGridClient = sendgrid.NewSendClient(flag.SendGridKey())
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
+}
+
+func URLQueryInt(r *http.Request, key string) int64 {
+	num, _ := strconv.ParseInt(r.URL.Query().Get(key), 10, 64)
+	return num
 }
 
 // SendEmail -

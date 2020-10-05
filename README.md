@@ -141,7 +141,7 @@ Request
 }
 ```
 
-### GET /api/jobs/{jobID}/logs?createdBefore={timestamp}&createdAfter={timestamp}
+### GET /api/jobs/{jobID}/logs?createdBefore={timestamp}
 
 Response
 ```

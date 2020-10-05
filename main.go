@@ -20,12 +20,13 @@ var pricesBinanceClient = &pricesclient.Client{
 }
 
 var redisHandle *redis.Handle
+var globalLogger *log.Logger
 
 func main() {
 
-	log.Init()
+	globalLogger = log.New("platform", "")
 
-	pricesBinanceClient.SetToBinance()
+	pricesBinanceClient.InitBinance()
 
 	db := initDB()
 	migrate(db)
@@ -48,7 +49,7 @@ func main() {
 		Handler: r,
 	}
 
-	log.Default().Fatal(server.ListenAndServe())
+	globalLogger.Fatal(server.ListenAndServe())
 }
 
 func apiRoute(r chi.Router) {
@@ -58,6 +59,7 @@ func apiRoute(r chi.Router) {
 	r.Route("/history", HistoryRoute)
 	r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
 	r.Route("/jobs", JobsRoute)
+	r.Route("/trades", TradesRoute)
 	r.Route("/userExchanges", ExchangesRoute)
 
 }
@@ -81,7 +83,7 @@ func migrate(d *db.DB) error {
 func initDB() *db.DB {
 	db, err := db.DefaultOpen()
 	if err != nil {
-		log.Default().Fatal(errors.New("platform could not connect to postgres. exiting."))
+		globalLogger.Fatal(errors.New("platform could not connect to postgres. exiting."))
 	}
 	return db
 }
