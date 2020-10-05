@@ -31,7 +31,7 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	var testrun backtestclient.TestRun
+	var testrun backtestclient.Backtest
 	conn.ReadJSON(&testrun)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
