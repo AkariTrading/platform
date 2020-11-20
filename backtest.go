@@ -38,8 +38,6 @@ func backtest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: error check testrun
-
 	backtest, err := backtestClient.Connect(testrun)
 	if err != nil {
 		logger.Error(errors.WithStack(err))

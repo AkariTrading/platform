@@ -40,7 +40,7 @@ func AuthRoutes(r chi.Router) {
 
 	r.Post("/login", login)
 	r.Post("/logout", logout)
-	r.Post("/verifySession", verifySession)
+	r.Get("/verifySession", verifySession)
 
 	r.Post("/register", register)
 	r.Post("/resendConfirmationEmail", resendRegistrationEmail)
@@ -70,13 +70,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	fmt.Println(input)
+
 	existingCred, query := DB.GetCredential(input.Email)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
 	}
 
-	user, query := DB.GetUser(input.Email)
+	user, query := DB.GetUserByEmail(input.Email)
 	if err := db.QueryError(w, query); err != nil {
 		logger.Error(errors.WithStack(err))
 		return
@@ -133,7 +135,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		fmt.Printf("Error: expiring session_token %v.", sessionToken)
 		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusInternalServerError)
-	} else if response == 0 {
+	} else if response == nil {
 		fmt.Printf("session_token %v already nil.", sessionToken)
 		w.WriteHeader(http.StatusOK)
 	} else {
@@ -153,35 +155,35 @@ func logout(w http.ResponseWriter, r *http.Request) {
 func verifySession(w http.ResponseWriter, r *http.Request) {
 
 	logger := middleware.GetLogger(r)
+	DB := middleware.GetDB(r)
 
 	// get session from cookie
 	c, err := r.Cookie(sessionTokenKey)
 	if err != nil {
-		if err == http.ErrNoCookie {
-			w.WriteHeader(http.StatusBadRequest)
-			logger.Error(errors.WithStack(err))
-			return
-		}
+		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 	sessionToken := c.Value
 
-	response, err := redisHandle.Do(redis.GetKey, sessionToken)
+	userID, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
 	if err != nil {
-		// error fetching from cache
 		logger.Error(errors.WithStack(err))
-
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	if response == nil {
-		// not present in cache
+	if userID == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	util.WriteJSON(w, response)
+	user, query := DB.GetUser(userID)
+	if err := db.QueryError(w, query); err != nil {
+		logger.Error(errors.WithStack(err))
+		return
+	}
+
+	util.WriteJSON(w, user)
 }
 
 func register(w http.ResponseWriter, r *http.Request) {
@@ -199,7 +201,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check existing user
-	_, query := DB.GetUser(input.Email)
+	_, query := DB.GetUserByEmail(input.Email)
 	if query.Error != gorm.ErrRecordNotFound {
 		logger.Error(errors.WithStack(err))
 		w.WriteHeader(http.StatusBadRequest)

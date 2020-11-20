@@ -40,7 +40,7 @@ func main() {
 	r.Use(middleware.RequestContext("platform", db))
 	r.Use(middleware.Recoverer)
 
-	r.Route("/auth", AuthRoutes)
+	r.Route("/api/auth", AuthRoutes)
 	r.Route("/api", apiRoute)
 	r.Route("/ws", wsRoute)
 

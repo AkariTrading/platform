@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/akaritrading/libs/middleware"
@@ -24,6 +25,8 @@ func authentication(next http.Handler) http.Handler {
 		if token := r.Header.Get(sessionTokenHeader); token != "" {
 			sessionToken = token
 		} else if c, err := r.Cookie("session_token"); err == nil {
+
+			fmt.Println(c)
 			sessionToken = c.Value
 		}
 
@@ -51,7 +54,7 @@ func authentication(next http.Handler) http.Handler {
 func jsonResponse(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
 		w.Header().Set("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE,OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With")
 		w.Header().Set("Access-Control-Allow-Credentials", "true")
