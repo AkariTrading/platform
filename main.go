@@ -6,6 +6,7 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 
+	"github.com/akaritrading/backtest/pkg/backtestclient"
 	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/flag"
@@ -15,9 +16,8 @@ import (
 	"github.com/akaritrading/prices/pkg/pricesclient"
 )
 
-var pricesBinanceClient = &pricesclient.Client{
-	Host: flag.PricesHost(),
-}
+var pricesClient *pricesclient.Client
+var backtestClient = backtestclient.New(flag.BacktestHost())
 
 var redisHandle *redis.Handle
 var globalLogger *log.Logger
@@ -26,7 +26,11 @@ func main() {
 
 	globalLogger = log.New("platform", "")
 
-	pricesBinanceClient.InitBinance()
+	pclient, err := pricesclient.Create(flag.PricesHost(), "binance")
+	if err != nil {
+		globalLogger.Fatal(err)
+	}
+	pricesClient = pclient
 
 	db := initDB()
 	migrate(db)
@@ -42,7 +46,7 @@ func main() {
 
 	r.Route("/api/auth", AuthRoutes)
 	r.Route("/api", apiRoute)
-	r.Route("/ws", wsRoute)
+	// r.Route("/ws", wsRoute)
 
 	server := &http.Server{
 		Addr:    flag.PlatformHost(),
@@ -61,14 +65,9 @@ func apiRoute(r chi.Router) {
 	r.Route("/jobs", JobsRoute)
 	r.Route("/trades", TradesRoute)
 	r.Route("/userExchanges", ExchangesRoute)
+	r.Route("/backtest", BacktestRoute)
 
 }
-
-func wsRoute(r chi.Router) {
-	r.Use(authentication)
-	r.Get("/backtest", backtest)
-}
-
 func migrate(d *db.DB) error {
 	return d.Gorm().AutoMigrate(
 		&db.Script{},

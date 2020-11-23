@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
@@ -41,7 +42,7 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if exchange == "binance" {
-		hist, err := pricesBinanceClient.GetHistory(symbol, 0, maxSize)
+		hist, err := pricesClient.NewRequest(r).Read(symbol, 0, time.Now().Add(-time.Minute*5).Unix()*1000, maxSize)
 		if err != nil {
 			logger.Error(errors.WithStack(err))
 			util.ErrorJSON(w, err)
