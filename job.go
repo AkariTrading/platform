@@ -8,6 +8,7 @@ import (
 
 	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/errutil"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
 	"github.com/go-chi/chi"
@@ -38,7 +39,7 @@ func stopJob(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !job.IsRunning {
-		util.ErrorJSON(w, util.ErrorScriptNotRunning)
+		errutil.ErrorJSON(w, util.ErrorScriptNotRunning)
 		logger.Error(errors.WithStack(util.ErrorScriptNotRunning))
 		return
 	}
@@ -46,7 +47,7 @@ func stopJob(w http.ResponseWriter, r *http.Request) {
 	err := engineClient.StopScript(job.NodeIP, jobID)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
-		util.ErrorJSON(w, err)
+		errutil.ErrorJSON(w, err)
 		return
 	}
 }
@@ -61,7 +62,7 @@ func runJob(w http.ResponseWriter, r *http.Request) {
 	newJob, err := jobRequest(r.Body, userID)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
-		util.ErrorJSON(w, err)
+		errutil.ErrorJSON(w, err)
 		return
 	}
 
@@ -70,7 +71,7 @@ func runJob(w http.ResponseWriter, r *http.Request) {
 		_, query := DB.GetConnectedExchange(userID, newJob.ExchangeID)
 		if query.Error != gorm.ErrRecordNotFound {
 			logger.Error(errors.WithStack(query.Error))
-			util.ErrorJSON(w, util.ErrorExchangeUserCredsNotFound)
+			errutil.ErrorJSON(w, util.ErrorExchangeUserCredsNotFound)
 			return
 		}
 	}
@@ -78,7 +79,7 @@ func runJob(w http.ResponseWriter, r *http.Request) {
 	err = engineClient.StartScript(newJob)
 	if err != nil {
 		logger.Error(errors.WithStack(err))
-		util.ErrorJSON(w, err)
+		errutil.ErrorJSON(w, err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

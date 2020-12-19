@@ -6,6 +6,7 @@ import (
 
 	"github.com/akaritrading/libs/crypto"
 	"github.com/akaritrading/libs/db"
+	"github.com/akaritrading/libs/errutil"
 	"github.com/akaritrading/libs/exchange"
 	"github.com/akaritrading/libs/exchange/binance"
 	"github.com/akaritrading/libs/flag"
@@ -48,30 +49,30 @@ func connectExchange(w http.ResponseWriter, r *http.Request) {
 
 	var req ExchangeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		util.ErrorJSON(w, util.ErrorUnkown)
+		errutil.ErrorJSON(w, util.ErrorUnkown)
 		logger.Error(errors.WithStack(util.ErrorUnkown))
 		return
 	}
 
 	if req.Exchange != "binance" {
-		util.ErrorJSON(w, util.ErrorExchangeNotFound)
+		errutil.ErrorJSON(w, util.ErrorExchangeNotFound)
 		return
 	}
 
 	if err := testExchange(req); err != nil {
-		util.ErrorJSON(w, errors.New("could not connect to exchange"))
+		errutil.ErrorJSON(w, errors.New("could not connect to exchange"))
 		return
 	}
 
 	encAPIKey, err := crypto.EncryptToBase64(flag.ExchangeKey(), req.ApiKey)
 	if err != nil {
-		util.ErrorJSON(w, util.ErrorUnkown)
+		errutil.ErrorJSON(w, util.ErrorUnkown)
 		return
 	}
 
 	encAPISecret, err := crypto.EncryptToBase64(flag.ExchangeKey(), req.ApiSecret)
 	if err != nil {
-		util.ErrorJSON(w, util.ErrorUnkown)
+		errutil.ErrorJSON(w, util.ErrorUnkown)
 		return
 	}
 

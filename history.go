@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/akaritrading/libs/errutil"
 	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/libs/util"
@@ -42,10 +43,10 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	if exchange == "binance" {
-		hist, err := pricesClient.NewRequest(r).Read(symbol, 0, time.Now().Add(-time.Minute*5).Unix()*1000, maxSize)
+		hist, err := pricesClient.NewRequest(r).Read(symbol, 0, time.Now().Add(-time.Minute*5).Unix()*1000)
 		if err != nil {
 			logger.Error(errors.WithStack(err))
-			util.ErrorJSON(w, err)
+			errutil.ErrorJSON(w, err)
 			return
 		}
 		util.WriteJSON(w, hist)
@@ -53,5 +54,5 @@ func getHistoryHandle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Error(errors.WithStack(util.ErrorExchangeNotFound))
-	util.ErrorJSON(w, util.ErrorExchangeNotFound)
+	errutil.ErrorJSON(w, util.ErrorExchangeNotFound)
 }
