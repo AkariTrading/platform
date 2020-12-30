@@ -11,10 +11,9 @@ import (
 	"github.com/akaritrading/libs/log"
 	"github.com/akaritrading/libs/middleware"
 	"github.com/akaritrading/platform/routes"
-	"github.com/akaritrading/prices/pkg/pricesclient"
 )
 
-var pricesClient *pricesclient.Client
+// var pricesClient *pricesclient.Client
 
 // var redisHandle *redis.Handle
 
@@ -24,11 +23,11 @@ func main() {
 
 	globalLogger = log.New("platform", "")
 
-	pclient, err := pricesclient.Create(flag.PricesHost(), "binance")
-	if err != nil {
-		globalLogger.Fatal(err)
-	}
-	pricesClient = pclient
+	// pclient, err := pricesclient.Create(flag.PricesHost(), "binance")
+	// if err != nil {
+	// 	globalLogger.Fatal(err)
+	// }
+	// pricesClient = pclient
 
 	// db := initDB()
 	// migrate(db)
@@ -54,8 +53,8 @@ func main() {
 }
 
 func apiRoute(r chi.Router) {
-	r.Use(jsonResponse)
-	r.Use(authentication)
+	r.Use(middleware.JSONResponse)
+	// r.Use(authentication)
 	// r.Route("/scripts", ScriptRoute)
 	// r.Route("/history", HistoryRoute)
 	// r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
