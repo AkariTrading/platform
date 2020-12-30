@@ -6,20 +6,18 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
 
-	"github.com/akaritrading/backtest/pkg/backtestclient"
-	"github.com/akaritrading/engine/pkg/engineclient"
 	"github.com/akaritrading/libs/db"
 	"github.com/akaritrading/libs/flag"
 	"github.com/akaritrading/libs/log"
 	"github.com/akaritrading/libs/middleware"
-	"github.com/akaritrading/libs/redis"
+	"github.com/akaritrading/platform/routes"
 	"github.com/akaritrading/prices/pkg/pricesclient"
 )
 
 var pricesClient *pricesclient.Client
-var backtestClient = backtestclient.New(flag.BacktestHost())
 
-var redisHandle *redis.Handle
+// var redisHandle *redis.Handle
+
 var globalLogger *log.Logger
 
 func main() {
@@ -32,20 +30,19 @@ func main() {
 	}
 	pricesClient = pclient
 
-	db := initDB()
-	migrate(db)
+	// db := initDB()
+	// migrate(db)
 
-	redisHandle = redis.DefaultConnect()
-	defer redisHandle.Close()
-
-	engineclient.Init(redisHandle)
+	// redisHandle = redis.DefaultConnect()
+	// defer redisHandle.Close()
+	// engineclient.Init(redisHandle)
 
 	r := chi.NewRouter()
-	r.Use(middleware.RequestContext("platform", db))
+	r.Use(middleware.RequestContext("platform", nil))
 	r.Use(middleware.Recoverer)
 
-	r.Route("/api/auth", AuthRoutes)
-	r.Route("/api", apiRoute)
+	// r.Route("/api/auth", AuthRoutes)
+	r.Route("/", apiRoute)
 	// r.Route("/ws", wsRoute)
 
 	server := &http.Server{
@@ -59,13 +56,13 @@ func main() {
 func apiRoute(r chi.Router) {
 	r.Use(jsonResponse)
 	r.Use(authentication)
-	r.Route("/scripts", ScriptRoute)
-	r.Route("/history", HistoryRoute)
-	r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
-	r.Route("/jobs", JobsRoute)
-	r.Route("/trades", TradesRoute)
-	r.Route("/userExchanges", ExchangesRoute)
-	r.Route("/backtest", BacktestRoute)
+	// r.Route("/scripts", ScriptRoute)
+	// r.Route("/history", HistoryRoute)
+	// r.Route("/scripts/{scriptID}/versions", ScriptVersionsRoute)
+	// r.Route("/jobs", JobsRoute)
+	// r.Route("/trades", TradesRoute)
+	// r.Route("/userExchanges", ExchangesRoute)
+	r.Route("/jobs", routes.BacktestRoute)
 
 }
 func migrate(d *db.DB) error {

@@ -3,12 +3,12 @@ module github.com/akaritrading/platform
 go 1.15
 
 require (
-	github.com/akaritrading/backtest v0.0.0
+	github.com/akaritrading/backtest v0.0.0 // indirect
 	github.com/akaritrading/engine v0.0.0
 	github.com/akaritrading/libs v0.0.0
 	github.com/akaritrading/prices v0.0.0
 	github.com/go-chi/chi v4.1.2+incompatible
-	github.com/gorilla/websocket v1.4.2
+	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/lib/pq v1.8.0 // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/sendgrid/rest v2.6.1+incompatible // indirect

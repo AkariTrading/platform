@@ -1,18 +1,15 @@
 package main
 
 import (
-	"context"
-	"fmt"
 	"net/http"
-
-	"github.com/akaritrading/libs/middleware"
-	"github.com/akaritrading/libs/redis"
 )
 
 func authentication(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		logger := middleware.GetLogger(r)
+		return
+
+		// logger := middleware.GetLogger(r)
 
 		// DEBUG
 		// ctx := context.WithValue(r.Context(), middleware.USERID, "d736b408-aa60-43a3-8daa-d6c21a23c417")
@@ -20,34 +17,34 @@ func authentication(next http.Handler) http.Handler {
 		// return
 		// DEBUG
 
-		var sessionToken string
+		// var sessionToken string
 
-		if token := r.Header.Get(sessionTokenHeader); token != "" {
-			sessionToken = token
-		} else if c, err := r.Cookie("session_token"); err == nil {
+		// if token := r.Header.Get(sessionTokenHeader); token != "" {
+		// 	sessionToken = token
+		// } else if c, err := r.Cookie("session_token"); err == nil {
 
-			fmt.Println(c)
-			sessionToken = c.Value
-		}
+		// 	fmt.Println(c)
+		// 	sessionToken = c.Value
+		// }
 
-		if sessionToken == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+		// if sessionToken == "" {
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	return
+		// }
 
-		response, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
+		// response, err := redis.String(redisHandle.Do(redis.GetKey, sessionToken))
 
-		if err != nil {
-			logger.Error(err)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		if response == "" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
+		// if err != nil {
+		// 	logger.Error(err)
+		// 	w.WriteHeader(http.StatusInternalServerError)
+		// 	return
+		// }
+		// if response == "" {
+		// 	w.WriteHeader(http.StatusUnauthorized)
+		// 	return
+		// }
 
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), middleware.USERID, response)))
+		// next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), middleware.USERID, response)))
 	})
 }
 

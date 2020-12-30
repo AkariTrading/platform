@@ -1,4 +1,4 @@
-package main
+package routes
 
 import (
 	"net/http"
@@ -7,16 +7,18 @@ import (
 )
 
 func BacktestRoute(r chi.Router) {
-	r.Post("/", backtest)
-	r.Post("/", task)
+	// var backtestClient = backtestclient.New(flag.BacktestHost())
+
+	r.Post("/backtest", backtest)
+	r.Post("/task", task)
 }
 
 func backtest(w http.ResponseWriter, r *http.Request) {
-	backtestClient.NewRequest(w, r).ProxyBacktest()
+	// backtestClient.NewRequest(w, r).ProxyBacktest()
 }
 
 func task(w http.ResponseWriter, r *http.Request) {
-	backtestClient.NewRequest(w, r).ProxyTask()
+	// backtestClient.NewRequest(w, r).ProxyTask()
 }
 
 // var upgrader = websocket.Upgrader{
