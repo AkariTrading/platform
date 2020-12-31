@@ -3,22 +3,25 @@ package routes
 import (
 	"net/http"
 
+	"github.com/akaritrading/backtest/pkg/backtestclient"
+	"github.com/akaritrading/libs/flag"
 	"github.com/go-chi/chi"
 )
 
+var backtestClient = backtestclient.New(flag.ServiceHost("backtest"))
+
 func BacktestRoute(r chi.Router) {
-	// var backtestClient = backtestclient.New(flag.BacktestHost())
 
 	r.Post("/backtest", backtest)
 	r.Post("/task", task)
 }
 
 func backtest(w http.ResponseWriter, r *http.Request) {
-	// backtestClient.NewRequest(w, r).ProxyBacktest()
+	backtestClient.NewRequest(w, r).ProxyBacktest()
 }
 
 func task(w http.ResponseWriter, r *http.Request) {
-	// backtestClient.NewRequest(w, r).ProxyTask()
+	backtestClient.NewRequest(w, r).ProxyTask()
 }
 
 // var upgrader = websocket.Upgrader{

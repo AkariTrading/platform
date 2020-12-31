@@ -17,11 +17,9 @@ import (
 
 // var redisHandle *redis.Handle
 
-var globalLogger *log.Logger
+var globalLogger = log.New("platform", "")
 
 func main() {
-
-	globalLogger = log.New("platform", "")
 
 	// pclient, err := pricesclient.Create(flag.PricesHost(), "binance")
 	// if err != nil {
@@ -45,7 +43,7 @@ func main() {
 	// r.Route("/ws", wsRoute)
 
 	server := &http.Server{
-		Addr:    flag.PlatformHost(),
+		Addr:    flag.ServicePort("platform"),
 		Handler: r,
 	}
 
@@ -54,6 +52,7 @@ func main() {
 
 func apiRoute(r chi.Router) {
 	r.Use(middleware.JSONResponse)
+	r.Use(cors)
 	// r.Use(authentication)
 	// r.Route("/scripts", ScriptRoute)
 	// r.Route("/history", HistoryRoute)
@@ -61,7 +60,7 @@ func apiRoute(r chi.Router) {
 	// r.Route("/jobs", JobsRoute)
 	// r.Route("/trades", TradesRoute)
 	// r.Route("/userExchanges", ExchangesRoute)
-	r.Route("/jobs", routes.BacktestRoute)
+	r.Route("/exec", routes.BacktestRoute)
 
 }
 func migrate(d *db.DB) error {
