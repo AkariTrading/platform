@@ -1,6 +1,9 @@
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
+github.com/akaritrading/backtest v0.0.3 h1:/VCDdq85AEMRUfxOjgzH+1CLv7DbUwWvh2oaM3Nk1ZI=
+github.com/akaritrading/backtest v0.0.3/go.mod h1:kXC31VSwgV5LBeWrhTDjYLW4idfhUR/FhH6ylX2a9Ao=
 github.com/akaritrading/libs v0.0.6 h1:0WtK392K7FJMcxKkGI27+DKGuAPI8lDhJTQBKA1oZvY=
 github.com/akaritrading/libs v0.0.6/go.mod h1:Q/YbxeMR2HHFPMqzR6QBvL3eqHGB3cCE1C9gl8zsLdo=
+github.com/akaritrading/prices v0.0.6 h1:REsilDrLgrUkef9+PQarfSo457CtHK7lUkSw6EMYjHQ=
 github.com/akaritrading/prices v0.0.6/go.mod h1:cVFfVA67K2d9LAMfDTNbl5cxSN3yrFeJkS0OYBizrT4=
 github.com/cockroachdb/apd v1.1.0 h1:3LFP3629v+1aKXU5Q37mxmRxX/pIu1nijXydLShEq5I=
 github.com/cockroachdb/apd v1.1.0/go.mod h1:8Sl8LxpKi29FqWXR16WEFZRNSz3SoPzUzeMeY4+DwBQ=
