@@ -52,7 +52,7 @@ func main() {
 
 func apiRoute(r chi.Router) {
 	r.Use(middleware.JSONResponse)
-	// r.Use(cors)
+	r.Use(cors)
 	// r.Use(authentication)
 	// r.Route("/scripts", ScriptRoute)
 	// r.Route("/history", HistoryRoute)

@@ -1,14 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"net/http"
 	"strconv"
 
-	"github.com/akaritrading/libs/flag"
 	"github.com/go-chi/chi"
-	"github.com/sendgrid/sendgrid-go"
-	"github.com/sendgrid/sendgrid-go/helpers/mail"
 )
 
 func cors(next http.Handler) http.Handler {
@@ -69,7 +65,7 @@ func authentication(next http.Handler) http.Handler {
 	})
 }
 
-var sendGridClient = sendgrid.NewSendClient(flag.SendGridKey())
+// var sendGridClient = sendgrid.NewSendClient(flag.SendGridKey())
 
 func getFromURL(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
@@ -81,14 +77,14 @@ func URLQueryInt(r *http.Request, key string) int64 {
 }
 
 // SendEmail -
-func SendEmail(targetEmail string, url string) error {
+// func SendEmail(targetEmail string, url string) error {
 
-	from := mail.NewEmail("Akari Trading Test", "esadakar@gmail.com")
-	subject := "Welcome to Akari Trading - Verify Your Account"
-	to := mail.NewEmail("AkariTrading Developer", targetEmail)
-	plainTextContent := "Welcome to Akari Trading. :happypepe:"
-	htmlContent := fmt.Sprintf("<a href='%v'> Verify your email. </a>", url)
-	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
-	_, err := sendGridClient.Send(message)
-	return err
-}
+// 	from := mail.NewEmail("Akari Trading Test", "esadakar@gmail.com")
+// 	subject := "Welcome to Akari Trading - Verify Your Account"
+// 	to := mail.NewEmail("AkariTrading Developer", targetEmail)
+// 	plainTextContent := "Welcome to Akari Trading. :happypepe:"
+// 	htmlContent := fmt.Sprintf("<a href='%v'> Verify your email. </a>", url)
+// 	message := mail.NewSingleEmail(from, subject, to, plainTextContent, htmlContent)
+// 	_, err := sendGridClient.Send(message)
+// 	return err
+// }
